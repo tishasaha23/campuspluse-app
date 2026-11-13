@@ -1,2 +1,3215 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+const DEFAULT_EVENTS = [
+  {
+    id: "EVT-101",
+    title: "HackCampus 2026: 24h AI & Cloud Sprint",
+    category: "Technical",
+    organizer: "Computer Science Society & ACM Club",
+    date: "2026-11-05",
+    time: "09:30",
+    venue: "Innovation Hub, Tech Block 4",
+    capacity: 120,
+    tags: ["Hackathon", "AI", "Cloud", "Cash Prizes"],
+    description: "Join over 100 student developers for a 24-hour sprint building real-world AI applications. Mentors from top tech firms, hardware gear provided, free meals and exciting cash awards!",
+    registeredStudents: [
+      {
+        ticketId: "TKT-829104",
+        name: "Aarav Sharma",
+        studentId: "CS2024-019",
+        email: "aarav.sharma@campus.edu",
+        department: "Computer Science",
+        year: "3rd Year",
+        phone: "+91 98765 12345",
+        registeredAt: "2026-10-20 14:32",
+        attended: true
+      },
+      {
+        ticketId: "TKT-829105",
+        name: "Priya Patel",
+        studentId: "IT2025-055",
+        email: "priya.p@campus.edu",
+        department: "Information Tech",
+        year: "2nd Year",
+        phone: "+91 98111 22334",
+        registeredAt: "2026-10-21 11:15",
+        attended: false
+      }
+    ]
+  },
+  {
+    id: "EVT-102",
+    title: "Spring Symphony: Annual Music & Cultural Fest",
+    category: "Cultural",
+    organizer: "Campus Cultural Affairs Committee",
+    date: "2026-11-12",
+    time: "17:00",
+    venue: "Main Campus Amphitheater",
+    capacity: 450,
+    tags: ["Battle of Bands", "Dance", "Food Stalls", "Concert"],
+    description: "The grandest cultural night of the semester featuring inter-college Battle of the Bands, theatrical plays, street dance, and an exclusive indie headliner performance.",
+    registeredStudents: [
+      {
+        ticketId: "TKT-671201",
+        name: "Rohan Deshmukh",
+        studentId: "ME2023-102",
+        email: "rohan.d@campus.edu",
+        department: "Mechanical",
+        year: "4th Year",
+        phone: "+91 97654 32100",
+        registeredAt: "2026-10-22 09:40",
+        attended: false
+      }
+    ]
+  },
+  {
+    id: "EVT-103",
+    title: "RoboWars: National Robotics Championship",
+    category: "Technical",
+    organizer: "Robotics & Automation Society",
+    date: "2026-11-18",
+    time: "11:00",
+    venue: "Indoor Sports Complex Arena",
+    capacity: 80,
+    tags: ["Robotics", "Combat", "Arduino", "Engineering"],
+    description: "Watch custom-built combat bots clash in high-voltage arena battles! Categories include 15kg featherweight combat, line tracer speed runs, and autonomous maze solvers.",
+    registeredStudents: []
+  },
+  {
+    id: "EVT-104",
+    title: "Quantum Computing & GenAI: Guest Lecture",
+    category: "Academic",
+    organizer: "Department of Applied Physics & AI",
+    date: "2026-11-20",
+    time: "14:00",
+    venue: "Sir C.V. Raman Seminar Hall",
+    capacity: 90,
+    tags: ["Guest Lecture", "Quantum", "Research", "AI"],
+    description: "Distinguished keynote address by Dr. K. Radhakrishnan on quantum machine learning algorithms, qubit coherence challenges, and research fellowships for undergrads.",
+    registeredStudents: []
+  },
+  {
+    id: "EVT-105",
+    title: "Inter-Department Football Championship",
+    category: "Sports",
+    organizer: "University Sports Directorate",
+    date: "2026-11-25",
+    time: "16:00",
+    venue: "Campus Main Athletic Stadium",
+    capacity: 250,
+    tags: ["Football", "Tournament", "Athletics", "Trophy"],
+    description: "The semester knockout football cup. 16 departmental teams battling over 3 days. Come support your branch and win the prestigious Chancellor's Trophy!",
+    registeredStudents: []
+  },
+  {
+    id: "EVT-106",
+    title: "Tech Career & Resume Clinic Workshop",
+    category: "Workshop",
+    organizer: "Career Training & Placement Cell",
+    date: "2026-11-28",
+    time: "10:30",
+    venue: "Convocation Hall Room 2",
+    capacity: 100,
+    tags: ["Career", "Interview Prep", "Mock Drills", "Resume"],
+    description: "Hands-on ATS resume optimization, 1-on-1 mock technical interviews, and portfolio architecture reviews conducted by senior alumni working at Fortune 500 firms.",
+    registeredStudents: []
+  }
+];
+
+class CampusEventManager {
+  constructor() {
+    this.events = [];
+    this.myRegistrations = [];
+    this.currentFilterCategory = "All";
+    this.currentSearchQuery = "";
+    this.currentStatusFilter = "All";
+    this.activeRosterEvent = null;
+
+    this.init();
+  }
+
+  init() {
+    this.loadState();
+    this.renderEvents();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+  }
+
+  // LocalStorage state management
+  loadState() {
+    const storedEvents = localStorage.getItem("campuspulse_events");
+    const storedRegistrations = localStorage.getItem("campuspulse_my_tickets");
+
+    if (storedEvents) {
+      try {
+        this.events = JSON.parse(storedEvents);
+      } catch (e) {
+        this.events = [...DEFAULT_EVENTS];
+      }
+    } else {
+      this.events = [...DEFAULT_EVENTS];
+      this.saveState();
+    }
+
+    if (storedRegistrations) {
+      try {
+        this.myRegistrations = JSON.parse(storedRegistrations);
+      } catch (e) {
+        this.myRegistrations = [];
+      }
+    } else {
+      // Seed initial student ticket for demo
+      this.myRegistrations = [
+        {
+          ticketId: "TKT-829104",
+          eventId: "EVT-101",
+          eventTitle: "HackCampus 2026: 24h AI & Cloud Sprint",
+          category: "Technical",
+          date: "2026-11-05",
+          time: "09:30",
+          venue: "Innovation Hub, Tech Block 4",
+          organizer: "Computer Science Society & ACM Club",
+          name: "Aarav Sharma",
+          studentId: "CS2024-019",
+          department: "Computer Science",
+          year: "3rd Year",
+          registeredAt: "2026-10-20 14:32"
+        }
+      ];
+      this.saveState();
+    }
+  }
+
+  saveState() {
+    localStorage.setItem("campuspulse_events", JSON.stringify(this.events));
+    localStorage.setItem("campuspulse_my_tickets", JSON.stringify(this.myRegistrations));
+  }
+
+  resetData() {
+    if (confirm("Reset all events and tickets to default demo state?")) {
+      localStorage.removeItem("campuspulse_events");
+      localStorage.removeItem("campuspulse_my_tickets");
+      this.events = [...DEFAULT_EVENTS];
+      this.myRegistrations = [
+        {
+          ticketId: "TKT-829104",
+          eventId: "EVT-101",
+          eventTitle: "HackCampus 2026: 24h AI & Cloud Sprint",
+          category: "Technical",
+          date: "2026-11-05",
+          time: "09:30",
+          venue: "Innovation Hub, Tech Block 4",
+          organizer: "Computer Science Society & ACM Club",
+          name: "Aarav Sharma",
+          studentId: "CS2024-019",
+          department: "Computer Science",
+          year: "3rd Year",
+          registeredAt: "2026-10-20 14:32"
+        }
+      ];
+      this.saveState();
+      this.renderEvents();
+      this.renderMyTickets();
+      this.updateMyTicketsBadge();
+      this.updateAdminDashboard();
+      this.showToast("Demo data successfully restored!", "success");
+    }
+  }
+
+  // Navigation tab switcher
+  switchTab(tabId) {
+    document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.remove("active"));
+    document.querySelectorAll(".nav-tab").forEach(tab => tab.classList.remove("active"));
+
+    const targetPane = document.getElementById(`tab-${tabId}`);
+    const targetTab = document.querySelector(`[data-tab="${tabId}"]`);
+
+    if (targetPane) targetPane.classList.add("active");
+    if (targetTab) targetTab.classList.add("active");
+
+    if (tabId === "my-tickets") {
+      this.renderMyTickets();
+    } else if (tabId === "admin") {
+      this.updateAdminDashboard();
+    } else if (tabId === "explore") {
+      this.renderEvents();
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Search & Filtering
+  filterEvents() {
+    this.currentSearchQuery = document.getElementById("searchInput").value.trim().toLowerCase();
+    this.currentFilterCategory = document.getElementById("categoryFilter").value;
+    this.currentStatusFilter = document.getElementById("statusFilter").value;
+    this.renderEvents();
+  }
+
+  setQuickFilter(category, buttonEl) {
+    document.querySelectorAll(".category-chips .chip").forEach(btn => btn.classList.remove("active"));
+    buttonEl.classList.add("active");
+
+    const categorySelect = document.getElementById("categoryFilter");
+    if (categorySelect) categorySelect.value = category;
+
+    this.currentFilterCategory = category;
+    this.renderEvents();
+  }
+
+  clearFilters() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("categoryFilter").value = "All";
+    document.getElementById("statusFilter").value = "All";
+    document.querySelectorAll(".category-chips .chip").forEach(btn => {
+      btn.classList.toggle("active", btn.textContent.trim() === "All Events");
+    });
+    this.currentSearchQuery = "";
+    this.currentFilterCategory = "All";
+    this.currentStatusFilter = "All";
+    this.renderEvents();
+  }
+
+  getFilteredEvents() {
+    return this.events.filter(event => {
+      // Category match
+      const matchCategory = this.currentFilterCategory === "All" || event.category === this.currentFilterCategory;
+
+      // Search query match (title, description, organizer, venue, tags)
+      const q = this.currentSearchQuery;
+      const matchSearch = !q || (
+        event.title.toLowerCase().includes(q) ||
+        event.organizer.toLowerCase().includes(q) ||
+        event.venue.toLowerCase().includes(q) ||
+        event.description.toLowerCase().includes(q) ||
+        (event.tags && event.tags.some(tag => tag.toLowerCase().includes(q)))
+      );
+
+      // Status filter match
+      const booked = (event.registeredStudents || []).length;
+      const seatsLeft = event.capacity - booked;
+      let matchStatus = true;
+      if (this.currentStatusFilter === "Available") {
+        matchStatus = seatsLeft > 0;
+      } else if (this.currentStatusFilter === "FastFilling") {
+        matchStatus = seatsLeft > 0 && (booked / event.capacity >= 0.7);
+      }
+
+      return matchCategory && matchSearch && matchStatus;
+    });
+  }
+
+  // Format Helpers
+  formatDate(dateStr) {
+    try {
+      const options = { weekday: "short", month: "short", day: "numeric", year: "numeric" };
+      return new Date(dateStr).toLocaleDateString("en-US", options);
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  formatTime(timeStr) {
+    if (!timeStr) return "";
+    const [h, m] = timeStr.split(":");
+    const hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour}:${m} ${ampm}`;
+  }
+
+  getCategoryClass(category) {
+    switch (category.toLowerCase()) {
+      case "technical": return "tech";
+      case "cultural": return "cultural";
+      case "sports": return "sports";
+      case "academic": return "academic";
+      case "workshop": return "workshop";
+      default: return "";
+    }
+  }
+
+  // Render Event Discovery Grid
+  renderEvents() {
+    const grid = document.getElementById("eventsGrid");
+    const emptyState = document.getElementById("noEventsState");
+    const countLabel = document.getElementById("eventsCountLabel");
+
+    const filtered = this.getFilteredEvents();
+
+    if (countLabel) {
+      countLabel.textContent = `Showing ${filtered.length} of ${this.events.length} campus events`;
+    }
+
+    if (filtered.length === 0) {
+      grid.innerHTML = "";
+      emptyState.classList.remove("hidden");
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+
+    grid.innerHTML = filtered.map(event => {
+      const regCount = (event.registeredStudents || []).length;
+      const capacity = event.capacity;
+      const seatsLeft = Math.max(0, capacity - regCount);
+      const isFull = seatsLeft === 0;
+      const percentBooked = Math.min(100, Math.round((regCount / capacity) * 100));
+
+      let progressClass = "";
+      if (percentBooked >= 90) progressClass = "full";
+      else if (percentBooked >= 70) progressClass = "almost-full";
+
+      // Check if user already registered
+      const isRegistered = this.myRegistrations.some(t => t.eventId === event.id);
+
+      return `
+        <article class="event-card">
+          <div class="event-card-header ${this.getCategoryClass(event.category)}">
+            <div class="card-top-badges">
+              <span class="category-badge">${event.category}</span>
+              <span class="seats-badge ${isFull ? 'full' : ''}">
+                ${isFull ? 'Sold Out' : `${seatsLeft} seats left`}
+              </span>
+            </div>
+            <div class="event-card-organizer">🏛️ ${event.organizer}</div>
+          </div>
+
+          <div class="event-card-body">
+            <h3 class="event-title">${event.title}</h3>
+            <p class="event-description">${event.description}</p>
+
+            <div class="capacity-wrapper">
+              <div class="capacity-text">
+                <span>Booked: ${regCount} / ${capacity}</span>
+                <span>${percentBooked}%</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill ${progressClass}" style="width: ${percentBooked}%"></div>
+              </div>
+            </div>
+
+            <div class="event-meta-info">
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span>${this.formatDate(event.date)} at ${this.formatTime(event.time)}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span>${event.venue}</span>
+              </div>
+            </div>
+
+            <div class="event-card-footer">
+              ${isRegistered ? `
+                <button class="btn btn-secondary" onclick="app.viewMyTicketByEvent('${event.id}')">
+                  🎟️ View My Ticket
+                </button>
+              ` : `
+                <button class="btn btn-primary" ${isFull ? 'disabled style="opacity:0.6; cursor:not-allowed;"' : ''} onclick="app.openRegistrationModal('${event.id}')">
+                  ${isFull ? 'Waitlist / Full' : 'Register Now'}
+                </button>
+              `}
+            </div>
+          </div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  // Open Event Registration Modal
+  openRegistrationModal(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    const regCount = (event.registeredStudents || []).length;
+    const seatsLeft = event.capacity - regCount;
+
+    if (seatsLeft <= 0) {
+      this.showToast("Sorry, this event has reached maximum capacity!", "error");
+      return;
+    }
+
+    document.getElementById("regEventId").value = event.id;
+    document.getElementById("regEventCategory").textContent = event.category;
+    document.getElementById("regEventTitle").textContent = event.title;
+    document.getElementById("regEventDateTime").textContent = `${this.formatDate(event.date)} @ ${this.formatTime(event.time)}`;
+    document.getElementById("regEventVenue").textContent = event.venue;
+    document.getElementById("regEventSeatsLeft").textContent = `${seatsLeft} of ${event.capacity} seats remaining`;
+
+    document.getElementById("registrationModal").classList.remove("hidden");
+  }
+
+  // Handle Student Registration Submit
+  handleRegistrationSubmit(e) {
+    e.preventDefault();
+
+    const eventId = document.getElementById("regEventId").value;
+    const studentName = document.getElementById("studentName").value.trim();
+    const studentId = document.getElementById("studentId").value.trim().toUpperCase();
+    const studentEmail = document.getElementById("studentEmail").value.trim().toLowerCase();
+    const studentDept = document.getElementById("studentDept").value;
+    const studentYear = document.getElementById("studentYear").value;
+    const studentPhone = document.getElementById("studentPhone").value.trim();
+
+    const event = this.events.find(ev => ev.id === eventId);
+    if (!event) {
+      this.showToast("Event not found!", "error");
+      return;
+    }
+
+    if (!event.registeredStudents) {
+      event.registeredStudents = [];
+    }
+
+    // Check duplicate student registration
+    const existing = event.registeredStudents.find(s => s.studentId === studentId);
+    if (existing) {
+      this.showToast(`Student ID ${studentId} is already registered for this event!`, "error");
+      return;
+    }
+
+    // Check capacity
+    if (event.registeredStudents.length >= event.capacity) {
+      this.showToast("Sorry, this event is already full!", "error");
+      return;
+    }
+
+    const uniqueTicketId = "TKT-" + Math.floor(100000 + Math.random() * 900000);
+    const now = new Date();
+    const formattedRegTime = now.toISOString().replace("T", " ").substring(0, 16);
+
+    const attendeeRecord = {
+      ticketId: uniqueTicketId,
+      name: studentName,
+      studentId: studentId,
+      email: studentEmail,
+      department: studentDept,
+      year: studentYear,
+      phone: studentPhone || "N/A",
+      registeredAt: formattedRegTime,
+      attended: false
+    };
+
+    // Save to event roster
+    event.registeredStudents.push(attendeeRecord);
+
+    // Save to user's registered tickets
+    const ticketRecord = {
+      ...attendeeRecord,
+      eventId: event.id,
+      eventTitle: event.title,
+      category: event.category,
+      date: event.date,
+      time: event.time,
+      venue: event.venue,
+      organizer: event.organizer
+    };
+    this.myRegistrations.unshift(ticketRecord);
+
+    this.saveState();
+    this.closeModal("registrationModal");
+    e.target.reset();
+
+    this.renderEvents();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+
+    this.showToast("Registration Successful! Your ticket has been generated.", "success");
+    this.showTicketModal(ticketRecord);
+  }
+
+  // View Ticket by Event ID
+  viewMyTicketByEvent(eventId) {
+    const ticket = this.myRegistrations.find(t => t.eventId === eventId);
+    if (ticket) {
+      this.showTicketModal(ticket);
+    } else {
+      this.showToast("No ticket found for this event.", "error");
+    }
+  }
+
+  // Display Digital Ticket & Render QR code on Canvas
+  showTicketModal(ticket) {
+    document.getElementById("tktCategory").textContent = ticket.category || "CAMPUS EVENT";
+    document.getElementById("tktRegId").textContent = ticket.ticketId;
+    document.getElementById("tktEventTitle").textContent = ticket.eventTitle;
+    document.getElementById("tktDate").textContent = `${this.formatDate(ticket.date)} • ${this.formatTime(ticket.time)}`;
+    document.getElementById("tktVenue").textContent = ticket.venue;
+    document.getElementById("tktOrganizer").textContent = ticket.organizer;
+
+    document.getElementById("tktAttendeeName").textContent = ticket.name;
+    document.getElementById("tktAttendeeId").textContent = ticket.studentId;
+    document.getElementById("tktDept").textContent = `${ticket.department} (${ticket.year || "Student"})`;
+    document.getElementById("tktStatus").textContent = ticket.attended ? "CHECKED-IN" : "CONFIRMED";
+
+    // Draw QR Code on Canvas
+    this.renderQrCodeCanvas("ticketQrCanvas", `${ticket.ticketId}:${ticket.studentId}:${ticket.eventId}`);
+
+    document.getElementById("ticketModal").classList.remove("hidden");
+  }
+
+  // Pure JavaScript QR Code Canvas Renderer (Zero Dependencies)
+  renderQrCodeCanvas(canvasId, text) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const size = 130;
+    canvas.width = size;
+    canvas.height = size;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+
+    // Simple pseudo-random deterministic hash based on text for authentic scannable-looking matrix
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      hash |= 0;
+    }
+
+    const gridSize = 21; // standard version 1 QR matrix size
+    const cellSize = Math.floor(size / (gridSize + 2));
+    const offset = Math.floor((size - (cellSize * gridSize)) / 2);
+
+    ctx.fillStyle = "#0f172a";
+
+    // Draw standard QR finder patterns in 3 corners
+    const drawFinderPattern = (startX, startY) => {
+      for (let r = 0; r < 7; r++) {
+        for (let c = 0; c < 7; c++) {
+          const isBlack = (r === 0 || r === 6 || c === 0 || c === 6) ||
+                          (r >= 2 && r <= 4 && c >= 2 && c <= 4);
+          if (isBlack) {
+            ctx.fillRect(offset + (startX + c) * cellSize, offset + (startY + r) * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+    };
+
+    drawFinderPattern(0, 0); // Top-left
+    drawFinderPattern(gridSize - 7, 0); // Top-right
+    drawFinderPattern(0, gridSize - 7); // Bottom-left
+
+    // Draw pseudo-random data bits
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        // Skip corner finder patterns
+        if ((r < 8 && c < 8) || (r < 8 && c >= gridSize - 8) || (r >= gridSize - 8 && c < 8)) {
+          continue;
+        }
+
+        // Timing patterns
+        if (r === 6 || c === 6) {
+          if ((r + c) % 2 === 0) {
+            ctx.fillRect(offset + c * cellSize, offset + r * cellSize, cellSize, cellSize);
+          }
+          continue;
+        }
+
+        // Deterministic bit fill based on text bytes
+        const bitVal = Math.sin(hash * (r * 17 + c * 31) + text.charCodeAt((r + c) % text.length));
+        if (bitVal > 0.05) {
+          ctx.fillRect(offset + c * cellSize, offset + r * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+  }
+
+  // Render My Registered Tickets View
+  renderMyTickets() {
+    const container = document.getElementById("myTicketsContainer");
+    const emptyState = document.getElementById("noTicketsState");
+
+    if (this.myRegistrations.length === 0) {
+      container.innerHTML = "";
+      emptyState.classList.remove("hidden");
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+
+    container.innerHTML = this.myRegistrations.map(tkt => {
+      return `
+        <div class="ticket-item-card">
+          <div class="ticket-item-header">
+            <div>
+              <span class="category-badge">${tkt.category}</span>
+              <span style="font-family: monospace; font-size: 0.8rem; margin-left: 0.5rem; color: #cbd5e1;">${tkt.ticketId}</span>
+            </div>
+            <span class="badge-subtle" style="background: rgba(255,255,255,0.2); color: #fff;">Confirmed</span>
+          </div>
+
+          <div class="ticket-item-body">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.75rem;">${tkt.eventTitle}</h3>
+            
+            <div class="event-meta-info" style="border: none; padding-top: 0;">
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span>${this.formatDate(tkt.date)} at ${this.formatTime(tkt.time)}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span>${tkt.venue}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Attendee: <strong>${tkt.name}</strong> (${tkt.studentId})</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ticket-item-footer">
+            <button class="btn btn-danger-outline btn-sm" onclick="app.cancelRegistration('${tkt.ticketId}', '${tkt.eventId}')">
+              Cancel RSVP
+            </button>
+            <button class="btn btn-primary btn-sm" onclick='app.showTicketModal(${JSON.stringify(tkt).replace(/'/g, "&#39;")})'>
+              View Pass & QR
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Cancel RSVP / Free seat
+  cancelRegistration(ticketId, eventId) {
+    if (!confirm("Are you sure you want to cancel your ticket registration? This will free your seat for other students.")) {
+      return;
+    }
+
+    // Remove from myRegistrations
+    this.myRegistrations = this.myRegistrations.filter(t => t.ticketId !== ticketId);
+
+    // Remove from event's registeredStudents
+    const event = this.events.find(e => e.id === eventId);
+    if (event && event.registeredStudents) {
+      event.registeredStudents = event.registeredStudents.filter(s => s.ticketId !== ticketId);
+    }
+
+    this.saveState();
+    this.renderMyTickets();
+    this.renderEvents();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+    this.showToast("Registration cancelled successfully. Seat restored.", "info");
+  }
+
+  updateMyTicketsBadge() {
+    const badge = document.getElementById("myTicketsBadge");
+    if (badge) {
+      badge.textContent = this.myRegistrations.length;
+    }
+  }
+
+  // ORGANIZER / ADMIN DASHBOARD LOGIC
+  updateAdminDashboard() {
+    const totalEvents = this.events.length;
+    let totalRegs = 0;
+    let totalCap = 0;
+
+    this.events.forEach(e => {
+      totalCap += e.capacity || 0;
+      totalRegs += (e.registeredStudents || []).length;
+    });
+
+    const avgOccupancy = totalCap > 0 ? Math.round((totalRegs / totalCap) * 100) : 0;
+
+    document.getElementById("metricTotalEvents").textContent = totalEvents;
+    document.getElementById("metricTotalRegs").textContent = totalRegs;
+    document.getElementById("metricTotalCapacity").textContent = totalCap;
+    document.getElementById("metricAvgOccupancy").textContent = `${avgOccupancy}%`;
+
+    const adminTableCount = document.getElementById("adminTableCount");
+    if (adminTableCount) adminTableCount.textContent = `${totalEvents} Events Active`;
+
+    this.renderAdminTable();
+  }
+
+  renderAdminTable() {
+    const tbody = document.getElementById("adminEventsTableBody");
+    if (!tbody) return;
+
+    if (this.events.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem;">No events available. Click "+ Publish New Event" to add one.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = this.events.map(ev => {
+      const regCount = (ev.registeredStudents || []).length;
+      const isFull = regCount >= ev.capacity;
+      const percent = Math.min(100, Math.round((regCount / ev.capacity) * 100));
+
+      return `
+        <tr>
+          <td>
+            <strong>${ev.title}</strong>
+            <div style="font-size: 0.775rem; color: var(--text-muted);">🏛️ ${ev.organizer}</div>
+          </td>
+          <td><span class="category-badge" style="background:#e0e7ff; color:#3730a3;">${ev.category}</span></td>
+          <td>
+            <div>${this.formatDate(ev.date)}</div>
+            <small style="color: var(--text-muted);">${ev.venue}</small>
+          </td>
+          <td style="min-width: 140px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
+              <span>${regCount} / ${ev.capacity}</span>
+              <span>${percent}%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill ${percent >= 90 ? 'full' : ''}" style="width: ${percent}%;"></div>
+            </div>
+          </td>
+          <td>
+            <span class="badge-subtle" style="${isFull ? 'background:#fee2e2; color:#b91c1c;' : 'background:#ecfdf5; color:#047857;'}">
+              ${isFull ? 'Sold Out' : 'Active'}
+            </span>
+          </td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-outline-sm" onclick="app.openRosterModal('${ev.id}')" title="View Registered Attendees">
+                👥 Roster (${regCount})
+              </button>
+              <button class="btn btn-outline-sm" onclick="app.openEditEventModal('${ev.id}')" title="Edit Event Details">
+                ✏️ Edit
+              </button>
+              <button class="btn btn-outline-sm btn-danger-outline" onclick="app.deleteEvent('${ev.id}')" title="Delete Event">
+                🗑️
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // Create / Edit Event Flow
+  openCreateModal() {
+    document.getElementById("createEventModalTitle").textContent = "Create New Campus Event";
+    document.getElementById("editEventId").value = "";
+    document.getElementById("createEventForm").reset();
+    document.getElementById("btnSaveEvent").textContent = "Publish Event";
+    document.getElementById("createEventModal").classList.remove("hidden");
+  }
+
+  openEditEventModal(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    document.getElementById("createEventModalTitle").textContent = "Edit Campus Event";
+    document.getElementById("editEventId").value = event.id;
+    document.getElementById("eventTitle").value = event.title;
+    document.getElementById("eventCategory").value = event.category;
+    document.getElementById("eventOrganizer").value = event.organizer;
+    document.getElementById("eventDate").value = event.date;
+    document.getElementById("eventTime").value = event.time;
+    document.getElementById("eventVenue").value = event.venue;
+    document.getElementById("eventCapacity").value = event.capacity;
+    document.getElementById("eventTags").value = (event.tags || []).join(", ");
+    document.getElementById("eventDesc").value = event.description;
+
+    document.getElementById("btnSaveEvent").textContent = "Save Changes";
+    document.getElementById("createEventModal").classList.remove("hidden");
+  }
+
+  handleCreateEventSubmit(e) {
+    e.preventDefault();
+
+    const editId = document.getElementById("editEventId").value;
+    const title = document.getElementById("eventTitle").value.trim();
+    const category = document.getElementById("eventCategory").value;
+    const organizer = document.getElementById("eventOrganizer").value.trim();
+    const date = document.getElementById("eventDate").value;
+    const time = document.getElementById("eventTime").value;
+    const venue = document.getElementById("eventVenue").value.trim();
+    const capacity = parseInt(document.getElementById("eventCapacity").value, 10);
+    const rawTags = document.getElementById("eventTags").value;
+    const tags = rawTags ? rawTags.split(",").map(t => t.trim()).filter(Boolean) : [];
+    const description = document.getElementById("eventDesc").value.trim();
+
+    if (editId) {
+      // Edit existing event
+      const existing = this.events.find(ev => ev.id === editId);
+      if (existing) {
+        existing.title = title;
+        existing.category = category;
+        existing.organizer = organizer;
+        existing.date = date;
+        existing.time = time;
+        existing.venue = venue;
+        existing.capacity = capacity;
+        existing.tags = tags;
+        existing.description = description;
+
+        // Also update any booked tickets in myRegistrations
+        this.myRegistrations.forEach(t => {
+          if (t.eventId === editId) {
+            t.eventTitle = title;
+            t.category = category;
+            t.date = date;
+            t.time = time;
+            t.venue = venue;
+            t.organizer = organizer;
+          }
+        });
+
+        this.showToast("Event updated successfully!", "success");
+      }
+    } else {
+      // Create new event
+      const newEvent = {
+        id: "EVT-" + Math.floor(100 + Math.random() * 900),
+        title,
+        category,
+        organizer,
+        date,
+        time,
+        venue,
+        capacity,
+        tags,
+        description,
+        registeredStudents: []
+      };
+      this.events.unshift(newEvent);
+      this.showToast("New event published successfully!", "success");
+    }
+
+    this.saveState();
+    this.closeModal("createEventModal");
+    this.renderEvents();
+    this.updateAdminDashboard();
+  }
+
+  deleteEvent(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    if (!confirm(`Are you sure you want to delete "${event.title}"? All existing attendee registrations will be removed.`)) {
+      return;
+    }
+
+    this.events = this.events.filter(e => e.id !== eventId);
+    this.myRegistrations = this.myRegistrations.filter(t => t.eventId !== eventId);
+
+    this.saveState();
+    this.renderEvents();
+    this.renderMyTickets();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+    this.showToast("Event deleted successfully.", "info");
+  }
+
+  // ATTENDEE ROSTER MANAGEMENT & CHECK-IN
+  openRosterModal(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    this.activeRosterEvent = event;
+    document.getElementById("rosterEventTitle").textContent = event.title;
+    document.getElementById("rosterSearchInput").value = "";
+
+    this.renderRosterTable(event.registeredStudents || []);
+    document.getElementById("rosterModal").classList.remove("hidden");
+  }
+
+  filterRoster() {
+    if (!this.activeRosterEvent) return;
+    const q = document.getElementById("rosterSearchInput").value.trim().toLowerCase();
+    const students = this.activeRosterEvent.registeredStudents || [];
+
+    const filtered = students.filter(s => 
+      s.name.toLowerCase().includes(q) ||
+      s.studentId.toLowerCase().includes(q) ||
+      s.email.toLowerCase().includes(q) ||
+      s.ticketId.toLowerCase().includes(q)
+    );
+
+    this.renderRosterTable(filtered);
+  }
+
+  renderRosterTable(students) {
+    const tbody = document.getElementById("rosterTableBody");
+    const countEl = document.getElementById("rosterCount");
+    const checkedInCountEl = document.getElementById("rosterCheckedInCount");
+
+    const total = (this.activeRosterEvent.registeredStudents || []).length;
+    const checkedIn = (this.activeRosterEvent.registeredStudents || []).filter(s => s.attended).length;
+
+    countEl.textContent = total;
+    checkedInCountEl.textContent = checkedIn;
+
+    if (students.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color:var(--text-muted);">No attendees found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = students.map(s => {
+      return `
+        <tr>
+          <td><code style="font-weight:700; color:var(--primary);">${s.ticketId}</code></td>
+          <td><strong>${s.name}</strong></td>
+          <td>${s.studentId}</td>
+          <td>${s.department} (${s.year || "N/A"})</td>
+          <td><small>${s.email}</small></td>
+          <td>
+            <button class="btn btn-sm ${s.attended ? 'btn-secondary' : 'btn-primary'}" onclick="app.toggleCheckIn('${s.ticketId}')">
+              ${s.attended ? '✓ Checked In' : 'Mark Present'}
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  toggleCheckIn(ticketId) {
+    if (!this.activeRosterEvent) return;
+
+    const student = (this.activeRosterEvent.registeredStudents || []).find(s => s.ticketId === ticketId);
+    if (student) {
+      student.attended = !student.attended;
+
+      // Update in myRegistrations if it exists there
+      const myTicket = this.myRegistrations.find(t => t.ticketId === ticketId);
+      if (myTicket) {
+        myTicket.attended = student.attended;
+      }
+
+      this.saveState();
+      this.filterRoster();
+      this.showToast(`${student.name} marked as ${student.attended ? 'Present' : 'Absent'}.`, "info");
+    }
+  }
+
+  // Export Roster as CSV File Download
+  exportRosterCSV() {
+    if (!this.activeRosterEvent || !(this.activeRosterEvent.registeredStudents || []).length) {
+      this.showToast("No attendees to export!", "error");
+      return;
+    }
+
+    const students = this.activeRosterEvent.registeredStudents;
+    let csv = "Ticket ID,Student Name,Roll No,Email,Department,Year,Phone,Registered At,Attendance Status\n";
+
+    students.forEach(s => {
+      const row = [
+        `"${s.ticketId}"`,
+        `"${s.name}"`,
+        `"${s.studentId}"`,
+        `"${s.email}"`,
+        `"${s.department}"`,
+        `"${s.year || ''}"`,
+        `"${s.phone || ''}"`,
+        `"${s.registeredAt}"`,
+        `"${s.attended ? 'Present' : 'Absent'}"`
+      ];
+      csv += row.join(",") + "\n";
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${this.activeRosterEvent.id}_Attendee_Roster.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.showToast("Attendee CSV roster downloaded!", "success");
+  }
+
+  // Modal Close Helper
+  closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add("hidden");
+  }
+
+  // Toast Notification System
+  showToast(message, type = "info") {
+    const container = document.getElementById("toastContainer");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+
+    let icon = "ℹ️";
+    if (type === "success") icon = "✅";
+    if (type === "error") icon = "⚠️";
+
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(10px)";
+      toast.style.transition = "all 0.3s ease";
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+}
+
+// Global Application Instance
+let app;
+function initApp() {
+  app = new CampusEventManager();
+  window.app = app;
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
+
+// Close modals when clicking backdrop
+window.addEventListener("click", (e) => {
+  if (e.target.classList.contains("modal-overlay")) {
+    e.target.classList.add("hidden");
+  }
+});
+
+// Close modals on Escape key
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    document.querySelectorAll(".modal-overlay").forEach(m => m.classList.add("hidden"));
+  }
+});const DEFAULT_EVENTS = [
+  {
+    id: "EVT-101",
+    title: "HackCampus 2026: 24h AI & Cloud Sprint",
+    category: "Technical",
+    organizer: "Computer Science Society & ACM Club",
+    date: "2026-11-05",
+    time: "09:30",
+    venue: "Innovation Hub, Tech Block 4",
+    capacity: 120,
+    tags: ["Hackathon", "AI", "Cloud", "Cash Prizes"],
+    description: "Join over 100 student developers for a 24-hour sprint building real-world AI applications. Mentors from top tech firms, hardware gear provided, free meals and exciting cash awards!",
+    registeredStudents: [
+      {
+        ticketId: "TKT-829104",
+        name: "Aarav Sharma",
+        studentId: "CS2024-019",
+        email: "aarav.sharma@campus.edu",
+        department: "Computer Science",
+        year: "3rd Year",
+        phone: "+91 98765 12345",
+        registeredAt: "2026-10-20 14:32",
+        attended: true
+      },
+      {
+        ticketId: "TKT-829105",
+        name: "Priya Patel",
+        studentId: "IT2025-055",
+        email: "priya.p@campus.edu",
+        department: "Information Tech",
+        year: "2nd Year",
+        phone: "+91 98111 22334",
+        registeredAt: "2026-10-21 11:15",
+        attended: false
+      }
+    ]
+  },
+  {
+    id: "EVT-102",
+    title: "Spring Symphony: Annual Music & Cultural Fest",
+    category: "Cultural",
+    organizer: "Campus Cultural Affairs Committee",
+    date: "2026-11-12",
+    time: "17:00",
+    venue: "Main Campus Amphitheater",
+    capacity: 450,
+    tags: ["Battle of Bands", "Dance", "Food Stalls", "Concert"],
+    description: "The grandest cultural night of the semester featuring inter-college Battle of the Bands, theatrical plays, street dance, and an exclusive indie headliner performance.",
+    registeredStudents: [
+      {
+        ticketId: "TKT-671201",
+        name: "Rohan Deshmukh",
+        studentId: "ME2023-102",
+        email: "rohan.d@campus.edu",
+        department: "Mechanical",
+        year: "4th Year",
+        phone: "+91 97654 32100",
+        registeredAt: "2026-10-22 09:40",
+        attended: false
+      }
+    ]
+  },
+  {
+    id: "EVT-103",
+    title: "RoboWars: National Robotics Championship",
+    category: "Technical",
+    organizer: "Robotics & Automation Society",
+    date: "2026-11-18",
+    time: "11:00",
+    venue: "Indoor Sports Complex Arena",
+    capacity: 80,
+    tags: ["Robotics", "Combat", "Arduino", "Engineering"],
+    description: "Watch custom-built combat bots clash in high-voltage arena battles! Categories include 15kg featherweight combat, line tracer speed runs, and autonomous maze solvers.",
+    registeredStudents: []
+  },
+  {
+    id: "EVT-104",
+    title: "Quantum Computing & GenAI: Guest Lecture",
+    category: "Academic",
+    organizer: "Department of Applied Physics & AI",
+    date: "2026-11-20",
+    time: "14:00",
+    venue: "Sir C.V. Raman Seminar Hall",
+    capacity: 90,
+    tags: ["Guest Lecture", "Quantum", "Research", "AI"],
+    description: "Distinguished keynote address by Dr. K. Radhakrishnan on quantum machine learning algorithms, qubit coherence challenges, and research fellowships for undergrads.",
+    registeredStudents: []
+  },
+  {
+    id: "EVT-105",
+    title: "Inter-Department Football Championship",
+    category: "Sports",
+    organizer: "University Sports Directorate",
+    date: "2026-11-25",
+    time: "16:00",
+    venue: "Campus Main Athletic Stadium",
+    capacity: 250,
+    tags: ["Football", "Tournament", "Athletics", "Trophy"],
+    description: "The semester knockout football cup. 16 departmental teams battling over 3 days. Come support your branch and win the prestigious Chancellor's Trophy!",
+    registeredStudents: []
+  },
+  {
+    id: "EVT-106",
+    title: "Tech Career & Resume Clinic Workshop",
+    category: "Workshop",
+    organizer: "Career Training & Placement Cell",
+    date: "2026-11-28",
+    time: "10:30",
+    venue: "Convocation Hall Room 2",
+    capacity: 100,
+    tags: ["Career", "Interview Prep", "Mock Drills", "Resume"],
+    description: "Hands-on ATS resume optimization, 1-on-1 mock technical interviews, and portfolio architecture reviews conducted by senior alumni working at Fortune 500 firms.",
+    registeredStudents: []
+  }
+];
+
+class CampusEventManager {
+  constructor() {
+    this.events = [];
+    this.myRegistrations = [];
+    this.currentFilterCategory = "All";
+    this.currentSearchQuery = "";
+    this.currentStatusFilter = "All";
+    this.activeRosterEvent = null;
+
+    this.init();
+  }
+
+  init() {
+    this.loadState();
+    this.renderEvents();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+  }
+
+  // LocalStorage state management
+  loadState() {
+    const storedEvents = localStorage.getItem("campuspulse_events");
+    const storedRegistrations = localStorage.getItem("campuspulse_my_tickets");
+
+    if (storedEvents) {
+      try {
+        this.events = JSON.parse(storedEvents);
+      } catch (e) {
+        this.events = [...DEFAULT_EVENTS];
+      }
+    } else {
+      this.events = [...DEFAULT_EVENTS];
+      this.saveState();
+    }
+
+    if (storedRegistrations) {
+      try {
+        this.myRegistrations = JSON.parse(storedRegistrations);
+      } catch (e) {
+        this.myRegistrations = [];
+      }
+    } else {
+      // Seed initial student ticket for demo
+      this.myRegistrations = [
+        {
+          ticketId: "TKT-829104",
+          eventId: "EVT-101",
+          eventTitle: "HackCampus 2026: 24h AI & Cloud Sprint",
+          category: "Technical",
+          date: "2026-11-05",
+          time: "09:30",
+          venue: "Innovation Hub, Tech Block 4",
+          organizer: "Computer Science Society & ACM Club",
+          name: "Aarav Sharma",
+          studentId: "CS2024-019",
+          department: "Computer Science",
+          year: "3rd Year",
+          registeredAt: "2026-10-20 14:32"
+        }
+      ];
+      this.saveState();
+    }
+  }
+
+  saveState() {
+    localStorage.setItem("campuspulse_events", JSON.stringify(this.events));
+    localStorage.setItem("campuspulse_my_tickets", JSON.stringify(this.myRegistrations));
+  }
+
+  resetData() {
+    if (confirm("Reset all events and tickets to default demo state?")) {
+      localStorage.removeItem("campuspulse_events");
+      localStorage.removeItem("campuspulse_my_tickets");
+      this.events = [...DEFAULT_EVENTS];
+      this.myRegistrations = [
+        {
+          ticketId: "TKT-829104",
+          eventId: "EVT-101",
+          eventTitle: "HackCampus 2026: 24h AI & Cloud Sprint",
+          category: "Technical",
+          date: "2026-11-05",
+          time: "09:30",
+          venue: "Innovation Hub, Tech Block 4",
+          organizer: "Computer Science Society & ACM Club",
+          name: "Aarav Sharma",
+          studentId: "CS2024-019",
+          department: "Computer Science",
+          year: "3rd Year",
+          registeredAt: "2026-10-20 14:32"
+        }
+      ];
+      this.saveState();
+      this.renderEvents();
+      this.renderMyTickets();
+      this.updateMyTicketsBadge();
+      this.updateAdminDashboard();
+      this.showToast("Demo data successfully restored!", "success");
+    }
+  }
+
+  // Navigation tab switcher
+  switchTab(tabId) {
+    document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.remove("active"));
+    document.querySelectorAll(".nav-tab").forEach(tab => tab.classList.remove("active"));
+
+    const targetPane = document.getElementById(`tab-${tabId}`);
+    const targetTab = document.querySelector(`[data-tab="${tabId}"]`);
+
+    if (targetPane) targetPane.classList.add("active");
+    if (targetTab) targetTab.classList.add("active");
+
+    if (tabId === "my-tickets") {
+      this.renderMyTickets();
+    } else if (tabId === "admin") {
+      this.updateAdminDashboard();
+    } else if (tabId === "explore") {
+      this.renderEvents();
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Search & Filtering
+  filterEvents() {
+    this.currentSearchQuery = document.getElementById("searchInput").value.trim().toLowerCase();
+    this.currentFilterCategory = document.getElementById("categoryFilter").value;
+    this.currentStatusFilter = document.getElementById("statusFilter").value;
+    this.renderEvents();
+  }
+
+  setQuickFilter(category, buttonEl) {
+    document.querySelectorAll(".category-chips .chip").forEach(btn => btn.classList.remove("active"));
+    buttonEl.classList.add("active");
+
+    const categorySelect = document.getElementById("categoryFilter");
+    if (categorySelect) categorySelect.value = category;
+
+    this.currentFilterCategory = category;
+    this.renderEvents();
+  }
+
+  clearFilters() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("categoryFilter").value = "All";
+    document.getElementById("statusFilter").value = "All";
+    document.querySelectorAll(".category-chips .chip").forEach(btn => {
+      btn.classList.toggle("active", btn.textContent.trim() === "All Events");
+    });
+    this.currentSearchQuery = "";
+    this.currentFilterCategory = "All";
+    this.currentStatusFilter = "All";
+    this.renderEvents();
+  }
+
+  getFilteredEvents() {
+    return this.events.filter(event => {
+      // Category match
+      const matchCategory = this.currentFilterCategory === "All" || event.category === this.currentFilterCategory;
+
+      // Search query match (title, description, organizer, venue, tags)
+      const q = this.currentSearchQuery;
+      const matchSearch = !q || (
+        event.title.toLowerCase().includes(q) ||
+        event.organizer.toLowerCase().includes(q) ||
+        event.venue.toLowerCase().includes(q) ||
+        event.description.toLowerCase().includes(q) ||
+        (event.tags && event.tags.some(tag => tag.toLowerCase().includes(q)))
+      );
+
+      // Status filter match
+      const booked = (event.registeredStudents || []).length;
+      const seatsLeft = event.capacity - booked;
+      let matchStatus = true;
+      if (this.currentStatusFilter === "Available") {
+        matchStatus = seatsLeft > 0;
+      } else if (this.currentStatusFilter === "FastFilling") {
+        matchStatus = seatsLeft > 0 && (booked / event.capacity >= 0.7);
+      }
+
+      return matchCategory && matchSearch && matchStatus;
+    });
+  }
+
+  // Format Helpers
+  formatDate(dateStr) {
+    try {
+      const options = { weekday: "short", month: "short", day: "numeric", year: "numeric" };
+      return new Date(dateStr).toLocaleDateString("en-US", options);
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  formatTime(timeStr) {
+    if (!timeStr) return "";
+    const [h, m] = timeStr.split(":");
+    const hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour}:${m} ${ampm}`;
+  }
+
+  getCategoryClass(category) {
+    switch (category.toLowerCase()) {
+      case "technical": return "tech";
+      case "cultural": return "cultural";
+      case "sports": return "sports";
+      case "academic": return "academic";
+      case "workshop": return "workshop";
+      default: return "";
+    }
+  }
+
+  // Render Event Discovery Grid
+  renderEvents() {
+    const grid = document.getElementById("eventsGrid");
+    const emptyState = document.getElementById("noEventsState");
+    const countLabel = document.getElementById("eventsCountLabel");
+
+    const filtered = this.getFilteredEvents();
+
+    if (countLabel) {
+      countLabel.textContent = `Showing ${filtered.length} of ${this.events.length} campus events`;
+    }
+
+    if (filtered.length === 0) {
+      grid.innerHTML = "";
+      emptyState.classList.remove("hidden");
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+
+    grid.innerHTML = filtered.map(event => {
+      const regCount = (event.registeredStudents || []).length;
+      const capacity = event.capacity;
+      const seatsLeft = Math.max(0, capacity - regCount);
+      const isFull = seatsLeft === 0;
+      const percentBooked = Math.min(100, Math.round((regCount / capacity) * 100));
+
+      let progressClass = "";
+      if (percentBooked >= 90) progressClass = "full";
+      else if (percentBooked >= 70) progressClass = "almost-full";
+
+      // Check if user already registered
+      const isRegistered = this.myRegistrations.some(t => t.eventId === event.id);
+
+      return `
+        <article class="event-card">
+          <div class="event-card-header ${this.getCategoryClass(event.category)}">
+            <div class="card-top-badges">
+              <span class="category-badge">${event.category}</span>
+              <span class="seats-badge ${isFull ? 'full' : ''}">
+                ${isFull ? 'Sold Out' : `${seatsLeft} seats left`}
+              </span>
+            </div>
+            <div class="event-card-organizer">🏛️ ${event.organizer}</div>
+          </div>
+
+          <div class="event-card-body">
+            <h3 class="event-title">${event.title}</h3>
+            <p class="event-description">${event.description}</p>
+
+            <div class="capacity-wrapper">
+              <div class="capacity-text">
+                <span>Booked: ${regCount} / ${capacity}</span>
+                <span>${percentBooked}%</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill ${progressClass}" style="width: ${percentBooked}%"></div>
+              </div>
+            </div>
+
+            <div class="event-meta-info">
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span>${this.formatDate(event.date)} at ${this.formatTime(event.time)}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span>${event.venue}</span>
+              </div>
+            </div>
+
+            <div class="event-card-footer">
+              ${isRegistered ? `
+                <button class="btn btn-secondary" onclick="app.viewMyTicketByEvent('${event.id}')">
+                  🎟️ View My Ticket
+                </button>
+              ` : `
+                <button class="btn btn-primary" ${isFull ? 'disabled style="opacity:0.6; cursor:not-allowed;"' : ''} onclick="app.openRegistrationModal('${event.id}')">
+                  ${isFull ? 'Waitlist / Full' : 'Register Now'}
+                </button>
+              `}
+            </div>
+          </div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  // Open Event Registration Modal
+  openRegistrationModal(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    const regCount = (event.registeredStudents || []).length;
+    const seatsLeft = event.capacity - regCount;
+
+    if (seatsLeft <= 0) {
+      this.showToast("Sorry, this event has reached maximum capacity!", "error");
+      return;
+    }
+
+    document.getElementById("regEventId").value = event.id;
+    document.getElementById("regEventCategory").textContent = event.category;
+    document.getElementById("regEventTitle").textContent = event.title;
+    document.getElementById("regEventDateTime").textContent = `${this.formatDate(event.date)} @ ${this.formatTime(event.time)}`;
+    document.getElementById("regEventVenue").textContent = event.venue;
+    document.getElementById("regEventSeatsLeft").textContent = `${seatsLeft} of ${event.capacity} seats remaining`;
+
+    document.getElementById("registrationModal").classList.remove("hidden");
+  }
+
+  // Handle Student Registration Submit
+  handleRegistrationSubmit(e) {
+    e.preventDefault();
+
+    const eventId = document.getElementById("regEventId").value;
+    const studentName = document.getElementById("studentName").value.trim();
+    const studentId = document.getElementById("studentId").value.trim().toUpperCase();
+    const studentEmail = document.getElementById("studentEmail").value.trim().toLowerCase();
+    const studentDept = document.getElementById("studentDept").value;
+    const studentYear = document.getElementById("studentYear").value;
+    const studentPhone = document.getElementById("studentPhone").value.trim();
+
+    const event = this.events.find(ev => ev.id === eventId);
+    if (!event) {
+      this.showToast("Event not found!", "error");
+      return;
+    }
+
+    if (!event.registeredStudents) {
+      event.registeredStudents = [];
+    }
+
+    // Check duplicate student registration
+    const existing = event.registeredStudents.find(s => s.studentId === studentId);
+    if (existing) {
+      this.showToast(`Student ID ${studentId} is already registered for this event!`, "error");
+      return;
+    }
+
+    // Check capacity
+    if (event.registeredStudents.length >= event.capacity) {
+      this.showToast("Sorry, this event is already full!", "error");
+      return;
+    }
+
+    const uniqueTicketId = "TKT-" + Math.floor(100000 + Math.random() * 900000);
+    const now = new Date();
+    const formattedRegTime = now.toISOString().replace("T", " ").substring(0, 16);
+
+    const attendeeRecord = {
+      ticketId: uniqueTicketId,
+      name: studentName,
+      studentId: studentId,
+      email: studentEmail,
+      department: studentDept,
+      year: studentYear,
+      phone: studentPhone || "N/A",
+      registeredAt: formattedRegTime,
+      attended: false
+    };
+
+    // Save to event roster
+    event.registeredStudents.push(attendeeRecord);
+
+    // Save to user's registered tickets
+    const ticketRecord = {
+      ...attendeeRecord,
+      eventId: event.id,
+      eventTitle: event.title,
+      category: event.category,
+      date: event.date,
+      time: event.time,
+      venue: event.venue,
+      organizer: event.organizer
+    };
+    this.myRegistrations.unshift(ticketRecord);
+
+    this.saveState();
+    this.closeModal("registrationModal");
+    e.target.reset();
+
+    this.renderEvents();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+
+    this.showToast("Registration Successful! Your ticket has been generated.", "success");
+    this.showTicketModal(ticketRecord);
+  }
+
+  // View Ticket by Event ID
+  viewMyTicketByEvent(eventId) {
+    const ticket = this.myRegistrations.find(t => t.eventId === eventId);
+    if (ticket) {
+      this.showTicketModal(ticket);
+    } else {
+      this.showToast("No ticket found for this event.", "error");
+    }
+  }
+
+  // Display Digital Ticket & Render QR code on Canvas
+  showTicketModal(ticket) {
+    document.getElementById("tktCategory").textContent = ticket.category || "CAMPUS EVENT";
+    document.getElementById("tktRegId").textContent = ticket.ticketId;
+    document.getElementById("tktEventTitle").textContent = ticket.eventTitle;
+    document.getElementById("tktDate").textContent = `${this.formatDate(ticket.date)} • ${this.formatTime(ticket.time)}`;
+    document.getElementById("tktVenue").textContent = ticket.venue;
+    document.getElementById("tktOrganizer").textContent = ticket.organizer;
+
+    document.getElementById("tktAttendeeName").textContent = ticket.name;
+    document.getElementById("tktAttendeeId").textContent = ticket.studentId;
+    document.getElementById("tktDept").textContent = `${ticket.department} (${ticket.year || "Student"})`;
+    document.getElementById("tktStatus").textContent = ticket.attended ? "CHECKED-IN" : "CONFIRMED";
+
+    // Draw QR Code on Canvas
+    this.renderQrCodeCanvas("ticketQrCanvas", `${ticket.ticketId}:${ticket.studentId}:${ticket.eventId}`);
+
+    document.getElementById("ticketModal").classList.remove("hidden");
+  }
+
+  // Pure JavaScript QR Code Canvas Renderer (Zero Dependencies)
+  renderQrCodeCanvas(canvasId, text) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const size = 130;
+    canvas.width = size;
+    canvas.height = size;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+
+    // Simple pseudo-random deterministic hash based on text for authentic scannable-looking matrix
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      hash |= 0;
+    }
+
+    const gridSize = 21; // standard version 1 QR matrix size
+    const cellSize = Math.floor(size / (gridSize + 2));
+    const offset = Math.floor((size - (cellSize * gridSize)) / 2);
+
+    ctx.fillStyle = "#0f172a";
+
+    // Draw standard QR finder patterns in 3 corners
+    const drawFinderPattern = (startX, startY) => {
+      for (let r = 0; r < 7; r++) {
+        for (let c = 0; c < 7; c++) {
+          const isBlack = (r === 0 || r === 6 || c === 0 || c === 6) ||
+                          (r >= 2 && r <= 4 && c >= 2 && c <= 4);
+          if (isBlack) {
+            ctx.fillRect(offset + (startX + c) * cellSize, offset + (startY + r) * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+    };
+
+    drawFinderPattern(0, 0); // Top-left
+    drawFinderPattern(gridSize - 7, 0); // Top-right
+    drawFinderPattern(0, gridSize - 7); // Bottom-left
+
+    // Draw pseudo-random data bits
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        // Skip corner finder patterns
+        if ((r < 8 && c < 8) || (r < 8 && c >= gridSize - 8) || (r >= gridSize - 8 && c < 8)) {
+          continue;
+        }
+
+        // Timing patterns
+        if (r === 6 || c === 6) {
+          if ((r + c) % 2 === 0) {
+            ctx.fillRect(offset + c * cellSize, offset + r * cellSize, cellSize, cellSize);
+          }
+          continue;
+        }
+
+        // Deterministic bit fill based on text bytes
+        const bitVal = Math.sin(hash * (r * 17 + c * 31) + text.charCodeAt((r + c) % text.length));
+        if (bitVal > 0.05) {
+          ctx.fillRect(offset + c * cellSize, offset + r * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+  }
+
+  // Render My Registered Tickets View
+  renderMyTickets() {
+    const container = document.getElementById("myTicketsContainer");
+    const emptyState = document.getElementById("noTicketsState");
+
+    if (this.myRegistrations.length === 0) {
+      container.innerHTML = "";
+      emptyState.classList.remove("hidden");
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+
+    container.innerHTML = this.myRegistrations.map(tkt => {
+      return `
+        <div class="ticket-item-card">
+          <div class="ticket-item-header">
+            <div>
+              <span class="category-badge">${tkt.category}</span>
+              <span style="font-family: monospace; font-size: 0.8rem; margin-left: 0.5rem; color: #cbd5e1;">${tkt.ticketId}</span>
+            </div>
+            <span class="badge-subtle" style="background: rgba(255,255,255,0.2); color: #fff;">Confirmed</span>
+          </div>
+
+          <div class="ticket-item-body">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.75rem;">${tkt.eventTitle}</h3>
+            
+            <div class="event-meta-info" style="border: none; padding-top: 0;">
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span>${this.formatDate(tkt.date)} at ${this.formatTime(tkt.time)}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span>${tkt.venue}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Attendee: <strong>${tkt.name}</strong> (${tkt.studentId})</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ticket-item-footer">
+            <button class="btn btn-danger-outline btn-sm" onclick="app.cancelRegistration('${tkt.ticketId}', '${tkt.eventId}')">
+              Cancel RSVP
+            </button>
+            <button class="btn btn-primary btn-sm" onclick='app.showTicketModal(${JSON.stringify(tkt).replace(/'/g, "&#39;")})'>
+              View Pass & QR
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Cancel RSVP / Free seat
+  cancelRegistration(ticketId, eventId) {
+    if (!confirm("Are you sure you want to cancel your ticket registration? This will free your seat for other students.")) {
+      return;
+    }
+
+    // Remove from myRegistrations
+    this.myRegistrations = this.myRegistrations.filter(t => t.ticketId !== ticketId);
+
+    // Remove from event's registeredStudents
+    const event = this.events.find(e => e.id === eventId);
+    if (event && event.registeredStudents) {
+      event.registeredStudents = event.registeredStudents.filter(s => s.ticketId !== ticketId);
+    }
+
+    this.saveState();
+    this.renderMyTickets();
+    this.renderEvents();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+    this.showToast("Registration cancelled successfully. Seat restored.", "info");
+  }
+
+  updateMyTicketsBadge() {
+    const badge = document.getElementById("myTicketsBadge");
+    if (badge) {
+      badge.textContent = this.myRegistrations.length;
+    }
+  }
+
+  // ORGANIZER / ADMIN DASHBOARD LOGIC
+  updateAdminDashboard() {
+    const totalEvents = this.events.length;
+    let totalRegs = 0;
+    let totalCap = 0;
+
+    this.events.forEach(e => {
+      totalCap += e.capacity || 0;
+      totalRegs += (e.registeredStudents || []).length;
+    });
+
+    const avgOccupancy = totalCap > 0 ? Math.round((totalRegs / totalCap) * 100) : 0;
+
+    document.getElementById("metricTotalEvents").textContent = totalEvents;
+    document.getElementById("metricTotalRegs").textContent = totalRegs;
+    document.getElementById("metricTotalCapacity").textContent = totalCap;
+    document.getElementById("metricAvgOccupancy").textContent = `${avgOccupancy}%`;
+
+    const adminTableCount = document.getElementById("adminTableCount");
+    if (adminTableCount) adminTableCount.textContent = `${totalEvents} Events Active`;
+
+    this.renderAdminTable();
+  }
+
+  renderAdminTable() {
+    const tbody = document.getElementById("adminEventsTableBody");
+    if (!tbody) return;
+
+    if (this.events.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem;">No events available. Click "+ Publish New Event" to add one.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = this.events.map(ev => {
+      const regCount = (ev.registeredStudents || []).length;
+      const isFull = regCount >= ev.capacity;
+      const percent = Math.min(100, Math.round((regCount / ev.capacity) * 100));
+
+      return `
+        <tr>
+          <td>
+            <strong>${ev.title}</strong>
+            <div style="font-size: 0.775rem; color: var(--text-muted);">🏛️ ${ev.organizer}</div>
+          </td>
+          <td><span class="category-badge" style="background:#e0e7ff; color:#3730a3;">${ev.category}</span></td>
+          <td>
+            <div>${this.formatDate(ev.date)}</div>
+            <small style="color: var(--text-muted);">${ev.venue}</small>
+          </td>
+          <td style="min-width: 140px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
+              <span>${regCount} / ${ev.capacity}</span>
+              <span>${percent}%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill ${percent >= 90 ? 'full' : ''}" style="width: ${percent}%;"></div>
+            </div>
+          </td>
+          <td>
+            <span class="badge-subtle" style="${isFull ? 'background:#fee2e2; color:#b91c1c;' : 'background:#ecfdf5; color:#047857;'}">
+              ${isFull ? 'Sold Out' : 'Active'}
+            </span>
+          </td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-outline-sm" onclick="app.openRosterModal('${ev.id}')" title="View Registered Attendees">
+                👥 Roster (${regCount})
+              </button>
+              <button class="btn btn-outline-sm" onclick="app.openEditEventModal('${ev.id}')" title="Edit Event Details">
+                ✏️ Edit
+              </button>
+              <button class="btn btn-outline-sm btn-danger-outline" onclick="app.deleteEvent('${ev.id}')" title="Delete Event">
+                🗑️
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // Create / Edit Event Flow
+  openCreateModal() {
+    document.getElementById("createEventModalTitle").textContent = "Create New Campus Event";
+    document.getElementById("editEventId").value = "";
+    document.getElementById("createEventForm").reset();
+    document.getElementById("btnSaveEvent").textContent = "Publish Event";
+    document.getElementById("createEventModal").classList.remove("hidden");
+  }
+
+  openEditEventModal(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    document.getElementById("createEventModalTitle").textContent = "Edit Campus Event";
+    document.getElementById("editEventId").value = event.id;
+    document.getElementById("eventTitle").value = event.title;
+    document.getElementById("eventCategory").value = event.category;
+    document.getElementById("eventOrganizer").value = event.organizer;
+    document.getElementById("eventDate").value = event.date;
+    document.getElementById("eventTime").value = event.time;
+    document.getElementById("eventVenue").value = event.venue;
+    document.getElementById("eventCapacity").value = event.capacity;
+    document.getElementById("eventTags").value = (event.tags || []).join(", ");
+    document.getElementById("eventDesc").value = event.description;
+
+    document.getElementById("btnSaveEvent").textContent = "Save Changes";
+    document.getElementById("createEventModal").classList.remove("hidden");
+  }
+
+  handleCreateEventSubmit(e) {
+    e.preventDefault();
+
+    const editId = document.getElementById("editEventId").value;
+    const title = document.getElementById("eventTitle").value.trim();
+    const category = document.getElementById("eventCategory").value;
+    const organizer = document.getElementById("eventOrganizer").value.trim();
+    const date = document.getElementById("eventDate").value;
+    const time = document.getElementById("eventTime").value;
+    const venue = document.getElementById("eventVenue").value.trim();
+    const capacity = parseInt(document.getElementById("eventCapacity").value, 10);
+    const rawTags = document.getElementById("eventTags").value;
+    const tags = rawTags ? rawTags.split(",").map(t => t.trim()).filter(Boolean) : [];
+    const description = document.getElementById("eventDesc").value.trim();
+
+    if (editId) {
+      // Edit existing event
+      const existing = this.events.find(ev => ev.id === editId);
+      if (existing) {
+        existing.title = title;
+        existing.category = category;
+        existing.organizer = organizer;
+        existing.date = date;
+        existing.time = time;
+        existing.venue = venue;
+        existing.capacity = capacity;
+        existing.tags = tags;
+        existing.description = description;
+
+        // Also update any booked tickets in myRegistrations
+        this.myRegistrations.forEach(t => {
+          if (t.eventId === editId) {
+            t.eventTitle = title;
+            t.category = category;
+            t.date = date;
+            t.time = time;
+            t.venue = venue;
+            t.organizer = organizer;
+          }
+        });
+
+        this.showToast("Event updated successfully!", "success");
+      }
+    } else {
+      // Create new event
+      const newEvent = {
+        id: "EVT-" + Math.floor(100 + Math.random() * 900),
+        title,
+        category,
+        organizer,
+        date,
+        time,
+        venue,
+        capacity,
+        tags,
+        description,
+        registeredStudents: []
+      };
+      this.events.unshift(newEvent);
+      this.showToast("New event published successfully!", "success");
+    }
+
+    this.saveState();
+    this.closeModal("createEventModal");
+    this.renderEvents();
+    this.updateAdminDashboard();
+  }
+
+  deleteEvent(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    if (!confirm(`Are you sure you want to delete "${event.title}"? All existing attendee registrations will be removed.`)) {
+      return;
+    }
+
+    this.events = this.events.filter(e => e.id !== eventId);
+    this.myRegistrations = this.myRegistrations.filter(t => t.eventId !== eventId);
+
+    this.saveState();
+    this.renderEvents();
+    this.renderMyTickets();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+    this.showToast("Event deleted successfully.", "info");
+  }
+
+  // ATTENDEE ROSTER MANAGEMENT & CHECK-IN
+  openRosterModal(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    this.activeRosterEvent = event;
+    document.getElementById("rosterEventTitle").textContent = event.title;
+    document.getElementById("rosterSearchInput").value = "";
+
+    this.renderRosterTable(event.registeredStudents || []);
+    document.getElementById("rosterModal").classList.remove("hidden");
+  }
+
+  filterRoster() {
+    if (!this.activeRosterEvent) return;
+    const q = document.getElementById("rosterSearchInput").value.trim().toLowerCase();
+    const students = this.activeRosterEvent.registeredStudents || [];
+
+    const filtered = students.filter(s => 
+      s.name.toLowerCase().includes(q) ||
+      s.studentId.toLowerCase().includes(q) ||
+      s.email.toLowerCase().includes(q) ||
+      s.ticketId.toLowerCase().includes(q)
+    );
+
+    this.renderRosterTable(filtered);
+  }
+
+  renderRosterTable(students) {
+    const tbody = document.getElementById("rosterTableBody");
+    const countEl = document.getElementById("rosterCount");
+    const checkedInCountEl = document.getElementById("rosterCheckedInCount");
+
+    const total = (this.activeRosterEvent.registeredStudents || []).length;
+    const checkedIn = (this.activeRosterEvent.registeredStudents || []).filter(s => s.attended).length;
+
+    countEl.textContent = total;
+    checkedInCountEl.textContent = checkedIn;
+
+    if (students.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color:var(--text-muted);">No attendees found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = students.map(s => {
+      return `
+        <tr>
+          <td><code style="font-weight:700; color:var(--primary);">${s.ticketId}</code></td>
+          <td><strong>${s.name}</strong></td>
+          <td>${s.studentId}</td>
+          <td>${s.department} (${s.year || "N/A"})</td>
+          <td><small>${s.email}</small></td>
+          <td>
+            <button class="btn btn-sm ${s.attended ? 'btn-secondary' : 'btn-primary'}" onclick="app.toggleCheckIn('${s.ticketId}')">
+              ${s.attended ? '✓ Checked In' : 'Mark Present'}
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  toggleCheckIn(ticketId) {
+    if (!this.activeRosterEvent) return;
+
+    const student = (this.activeRosterEvent.registeredStudents || []).find(s => s.ticketId === ticketId);
+    if (student) {
+      student.attended = !student.attended;
+
+      // Update in myRegistrations if it exists there
+      const myTicket = this.myRegistrations.find(t => t.ticketId === ticketId);
+      if (myTicket) {
+        myTicket.attended = student.attended;
+      }
+
+      this.saveState();
+      this.filterRoster();
+      this.showToast(`${student.name} marked as ${student.attended ? 'Present' : 'Absent'}.`, "info");
+    }
+  }
+
+  // Export Roster as CSV File Download
+  exportRosterCSV() {
+    if (!this.activeRosterEvent || !(this.activeRosterEvent.registeredStudents || []).length) {
+      this.showToast("No attendees to export!", "error");
+      return;
+    }
+
+    const students = this.activeRosterEvent.registeredStudents;
+    let csv = "Ticket ID,Student Name,Roll No,Email,Department,Year,Phone,Registered At,Attendance Status\n";
+
+    students.forEach(s => {
+      const row = [
+        `"${s.ticketId}"`,
+        `"${s.name}"`,
+        `"${s.studentId}"`,
+        `"${s.email}"`,
+        `"${s.department}"`,
+        `"${s.year || ''}"`,
+        `"${s.phone || ''}"`,
+        `"${s.registeredAt}"`,
+        `"${s.attended ? 'Present' : 'Absent'}"`
+      ];
+      csv += row.join(",") + "\n";
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${this.activeRosterEvent.id}_Attendee_Roster.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.showToast("Attendee CSV roster downloaded!", "success");
+  }
+
+  // Modal Close Helper
+  closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add("hidden");
+  }
+
+  // Toast Notification System
+  showToast(message, type = "info") {
+    const container = document.getElementById("toastContainer");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+
+    let icon = "ℹ️";
+    if (type === "success") icon = "✅";
+    if (type === "error") icon = "⚠️";
+
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(10px)";
+      toast.style.transition = "all 0.3s ease";
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+}
+
+// Global Application Instance
+let app;
+function initApp() {
+  app = new CampusEventManager();
+  window.app = app;
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
+
+// Close modals when clicking backdrop
+window.addEventListener("click", (e) => {
+  if (e.target.classList.contains("modal-overlay")) {
+    e.target.classList.add("hidden");
+  }
+});
+
+// Close modals on Escape key
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    document.querySelectorAll(".modal-overlay").forEach(m => m.classList.add("hidden"));
+  }
+});
+const DEFAULT_EVENTS = [
+  {
+    id: "EVT-101",
+    title: "HackCampus 2026: 24h AI & Cloud Sprint",
+    category: "Technical",
+    organizer: "Computer Science Society & ACM Club",
+    date: "2026-11-05",
+    time: "09:30",
+    venue: "Innovation Hub, Tech Block 4",
+    capacity: 120,
+    tags: ["Hackathon", "AI", "Cloud", "Cash Prizes"],
+    description: "Join over 100 student developers for a 24-hour sprint building real-world AI applications. Mentors from top tech firms, hardware gear provided, free meals and exciting cash awards!",
+    registeredStudents: [
+      {
+        ticketId: "TKT-829104",
+        name: "Aarav Sharma",
+        studentId: "CS2024-019",
+        email: "aarav.sharma@campus.edu",
+        department: "Computer Science",
+        year: "3rd Year",
+        phone: "+91 98765 12345",
+        registeredAt: "2026-10-20 14:32",
+        attended: true
+      },
+      {
+        ticketId: "TKT-829105",
+        name: "Priya Patel",
+        studentId: "IT2025-055",
+        email: "priya.p@campus.edu",
+        department: "Information Tech",
+        year: "2nd Year",
+        phone: "+91 98111 22334",
+        registeredAt: "2026-10-21 11:15",
+        attended: false
+      }
+    ]
+  },
+  {
+    id: "EVT-102",
+    title: "Spring Symphony: Annual Music & Cultural Fest",
+    category: "Cultural",
+    organizer: "Campus Cultural Affairs Committee",
+    date: "2026-11-12",
+    time: "17:00",
+    venue: "Main Campus Amphitheater",
+    capacity: 450,
+    tags: ["Battle of Bands", "Dance", "Food Stalls", "Concert"],
+    description: "The grandest cultural night of the semester featuring inter-college Battle of the Bands, theatrical plays, street dance, and an exclusive indie headliner performance.",
+    registeredStudents: [
+      {
+        ticketId: "TKT-671201",
+        name: "Rohan Deshmukh",
+        studentId: "ME2023-102",
+        email: "rohan.d@campus.edu",
+        department: "Mechanical",
+        year: "4th Year",
+        phone: "+91 97654 32100",
+        registeredAt: "2026-10-22 09:40",
+        attended: false
+      }
+    ]
+  },
+  {
+    id: "EVT-103",
+    title: "RoboWars: National Robotics Championship",
+    category: "Technical",
+    organizer: "Robotics & Automation Society",
+    date: "2026-11-18",
+    time: "11:00",
+    venue: "Indoor Sports Complex Arena",
+    capacity: 80,
+    tags: ["Robotics", "Combat", "Arduino", "Engineering"],
+    description: "Watch custom-built combat bots clash in high-voltage arena battles! Categories include 15kg featherweight combat, line tracer speed runs, and autonomous maze solvers.",
+    registeredStudents: []
+  },
+  {
+    id: "EVT-104",
+    title: "Quantum Computing & GenAI: Guest Lecture",
+    category: "Academic",
+    organizer: "Department of Applied Physics & AI",
+    date: "2026-11-20",
+    time: "14:00",
+    venue: "Sir C.V. Raman Seminar Hall",
+    capacity: 90,
+    tags: ["Guest Lecture", "Quantum", "Research", "AI"],
+    description: "Distinguished keynote address by Dr. K. Radhakrishnan on quantum machine learning algorithms, qubit coherence challenges, and research fellowships for undergrads.",
+    registeredStudents: []
+  },
+  {
+    id: "EVT-105",
+    title: "Inter-Department Football Championship",
+    category: "Sports",
+    organizer: "University Sports Directorate",
+    date: "2026-11-25",
+    time: "16:00",
+    venue: "Campus Main Athletic Stadium",
+    capacity: 250,
+    tags: ["Football", "Tournament", "Athletics", "Trophy"],
+    description: "The semester knockout football cup. 16 departmental teams battling over 3 days. Come support your branch and win the prestigious Chancellor's Trophy!",
+    registeredStudents: []
+  },
+  {
+    id: "EVT-106",
+    title: "Tech Career & Resume Clinic Workshop",
+    category: "Workshop",
+    organizer: "Career Training & Placement Cell",
+    date: "2026-11-28",
+    time: "10:30",
+    venue: "Convocation Hall Room 2",
+    capacity: 100,
+    tags: ["Career", "Interview Prep", "Mock Drills", "Resume"],
+    description: "Hands-on ATS resume optimization, 1-on-1 mock technical interviews, and portfolio architecture reviews conducted by senior alumni working at Fortune 500 firms.",
+    registeredStudents: []
+  }
+];
+
+class CampusEventManager {
+  constructor() {
+    this.events = [];
+    this.myRegistrations = [];
+    this.currentFilterCategory = "All";
+    this.currentSearchQuery = "";
+    this.currentStatusFilter = "All";
+    this.activeRosterEvent = null;
+
+    this.init();
+  }
+
+  init() {
+    this.loadState();
+    this.renderEvents();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+  }
+
+  // LocalStorage state management
+  loadState() {
+    const storedEvents = localStorage.getItem("campuspulse_events");
+    const storedRegistrations = localStorage.getItem("campuspulse_my_tickets");
+
+    if (storedEvents) {
+      try {
+        this.events = JSON.parse(storedEvents);
+      } catch (e) {
+        this.events = [...DEFAULT_EVENTS];
+      }
+    } else {
+      this.events = [...DEFAULT_EVENTS];
+      this.saveState();
+    }
+
+    if (storedRegistrations) {
+      try {
+        this.myRegistrations = JSON.parse(storedRegistrations);
+      } catch (e) {
+        this.myRegistrations = [];
+      }
+    } else {
+      // Seed initial student ticket for demo
+      this.myRegistrations = [
+        {
+          ticketId: "TKT-829104",
+          eventId: "EVT-101",
+          eventTitle: "HackCampus 2026: 24h AI & Cloud Sprint",
+          category: "Technical",
+          date: "2026-11-05",
+          time: "09:30",
+          venue: "Innovation Hub, Tech Block 4",
+          organizer: "Computer Science Society & ACM Club",
+          name: "Aarav Sharma",
+          studentId: "CS2024-019",
+          department: "Computer Science",
+          year: "3rd Year",
+          registeredAt: "2026-10-20 14:32"
+        }
+      ];
+      this.saveState();
+    }
+  }
+
+  saveState() {
+    localStorage.setItem("campuspulse_events", JSON.stringify(this.events));
+    localStorage.setItem("campuspulse_my_tickets", JSON.stringify(this.myRegistrations));
+  }
+
+  resetData() {
+    if (confirm("Reset all events and tickets to default demo state?")) {
+      localStorage.removeItem("campuspulse_events");
+      localStorage.removeItem("campuspulse_my_tickets");
+      this.events = [...DEFAULT_EVENTS];
+      this.myRegistrations = [
+        {
+          ticketId: "TKT-829104",
+          eventId: "EVT-101",
+          eventTitle: "HackCampus 2026: 24h AI & Cloud Sprint",
+          category: "Technical",
+          date: "2026-11-05",
+          time: "09:30",
+          venue: "Innovation Hub, Tech Block 4",
+          organizer: "Computer Science Society & ACM Club",
+          name: "Aarav Sharma",
+          studentId: "CS2024-019",
+          department: "Computer Science",
+          year: "3rd Year",
+          registeredAt: "2026-10-20 14:32"
+        }
+      ];
+      this.saveState();
+      this.renderEvents();
+      this.renderMyTickets();
+      this.updateMyTicketsBadge();
+      this.updateAdminDashboard();
+      this.showToast("Demo data successfully restored!", "success");
+    }
+  }
+
+  // Navigation tab switcher
+  switchTab(tabId) {
+    document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.remove("active"));
+    document.querySelectorAll(".nav-tab").forEach(tab => tab.classList.remove("active"));
+
+    const targetPane = document.getElementById(`tab-${tabId}`);
+    const targetTab = document.querySelector(`[data-tab="${tabId}"]`);
+
+    if (targetPane) targetPane.classList.add("active");
+    if (targetTab) targetTab.classList.add("active");
+
+    if (tabId === "my-tickets") {
+      this.renderMyTickets();
+    } else if (tabId === "admin") {
+      this.updateAdminDashboard();
+    } else if (tabId === "explore") {
+      this.renderEvents();
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Search & Filtering
+  filterEvents() {
+    this.currentSearchQuery = document.getElementById("searchInput").value.trim().toLowerCase();
+    this.currentFilterCategory = document.getElementById("categoryFilter").value;
+    this.currentStatusFilter = document.getElementById("statusFilter").value;
+    this.renderEvents();
+  }
+
+  setQuickFilter(category, buttonEl) {
+    document.querySelectorAll(".category-chips .chip").forEach(btn => btn.classList.remove("active"));
+    buttonEl.classList.add("active");
+
+    const categorySelect = document.getElementById("categoryFilter");
+    if (categorySelect) categorySelect.value = category;
+
+    this.currentFilterCategory = category;
+    this.renderEvents();
+  }
+
+  clearFilters() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("categoryFilter").value = "All";
+    document.getElementById("statusFilter").value = "All";
+    document.querySelectorAll(".category-chips .chip").forEach(btn => {
+      btn.classList.toggle("active", btn.textContent.trim() === "All Events");
+    });
+    this.currentSearchQuery = "";
+    this.currentFilterCategory = "All";
+    this.currentStatusFilter = "All";
+    this.renderEvents();
+  }
+
+  getFilteredEvents() {
+    return this.events.filter(event => {
+      // Category match
+      const matchCategory = this.currentFilterCategory === "All" || event.category === this.currentFilterCategory;
+
+      // Search query match (title, description, organizer, venue, tags)
+      const q = this.currentSearchQuery;
+      const matchSearch = !q || (
+        event.title.toLowerCase().includes(q) ||
+        event.organizer.toLowerCase().includes(q) ||
+        event.venue.toLowerCase().includes(q) ||
+        event.description.toLowerCase().includes(q) ||
+        (event.tags && event.tags.some(tag => tag.toLowerCase().includes(q)))
+      );
+
+      // Status filter match
+      const booked = (event.registeredStudents || []).length;
+      const seatsLeft = event.capacity - booked;
+      let matchStatus = true;
+      if (this.currentStatusFilter === "Available") {
+        matchStatus = seatsLeft > 0;
+      } else if (this.currentStatusFilter === "FastFilling") {
+        matchStatus = seatsLeft > 0 && (booked / event.capacity >= 0.7);
+      }
+
+      return matchCategory && matchSearch && matchStatus;
+    });
+  }
+
+  // Format Helpers
+  formatDate(dateStr) {
+    try {
+      const options = { weekday: "short", month: "short", day: "numeric", year: "numeric" };
+      return new Date(dateStr).toLocaleDateString("en-US", options);
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
+  formatTime(timeStr) {
+    if (!timeStr) return "";
+    const [h, m] = timeStr.split(":");
+    const hour = parseInt(h, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const formattedHour = hour % 12 || 12;
+    return `${formattedHour}:${m} ${ampm}`;
+  }
+
+  getCategoryClass(category) {
+    switch (category.toLowerCase()) {
+      case "technical": return "tech";
+      case "cultural": return "cultural";
+      case "sports": return "sports";
+      case "academic": return "academic";
+      case "workshop": return "workshop";
+      default: return "";
+    }
+  }
+
+  // Render Event Discovery Grid
+  renderEvents() {
+    const grid = document.getElementById("eventsGrid");
+    const emptyState = document.getElementById("noEventsState");
+    const countLabel = document.getElementById("eventsCountLabel");
+
+    const filtered = this.getFilteredEvents();
+
+    if (countLabel) {
+      countLabel.textContent = `Showing ${filtered.length} of ${this.events.length} campus events`;
+    }
+
+    if (filtered.length === 0) {
+      grid.innerHTML = "";
+      emptyState.classList.remove("hidden");
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+
+    grid.innerHTML = filtered.map(event => {
+      const regCount = (event.registeredStudents || []).length;
+      const capacity = event.capacity;
+      const seatsLeft = Math.max(0, capacity - regCount);
+      const isFull = seatsLeft === 0;
+      const percentBooked = Math.min(100, Math.round((regCount / capacity) * 100));
+
+      let progressClass = "";
+      if (percentBooked >= 90) progressClass = "full";
+      else if (percentBooked >= 70) progressClass = "almost-full";
+
+      // Check if user already registered
+      const isRegistered = this.myRegistrations.some(t => t.eventId === event.id);
+
+      return `
+        <article class="event-card">
+          <div class="event-card-header ${this.getCategoryClass(event.category)}">
+            <div class="card-top-badges">
+              <span class="category-badge">${event.category}</span>
+              <span class="seats-badge ${isFull ? 'full' : ''}">
+                ${isFull ? 'Sold Out' : `${seatsLeft} seats left`}
+              </span>
+            </div>
+            <div class="event-card-organizer">🏛️ ${event.organizer}</div>
+          </div>
+
+          <div class="event-card-body">
+            <h3 class="event-title">${event.title}</h3>
+            <p class="event-description">${event.description}</p>
+
+            <div class="capacity-wrapper">
+              <div class="capacity-text">
+                <span>Booked: ${regCount} / ${capacity}</span>
+                <span>${percentBooked}%</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill ${progressClass}" style="width: ${percentBooked}%"></div>
+              </div>
+            </div>
+
+            <div class="event-meta-info">
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span>${this.formatDate(event.date)} at ${this.formatTime(event.time)}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span>${event.venue}</span>
+              </div>
+            </div>
+
+            <div class="event-card-footer">
+              ${isRegistered ? `
+                <button class="btn btn-secondary" onclick="app.viewMyTicketByEvent('${event.id}')">
+                  🎟️ View My Ticket
+                </button>
+              ` : `
+                <button class="btn btn-primary" ${isFull ? 'disabled style="opacity:0.6; cursor:not-allowed;"' : ''} onclick="app.openRegistrationModal('${event.id}')">
+                  ${isFull ? 'Waitlist / Full' : 'Register Now'}
+                </button>
+              `}
+            </div>
+          </div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  // Open Event Registration Modal
+  openRegistrationModal(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    const regCount = (event.registeredStudents || []).length;
+    const seatsLeft = event.capacity - regCount;
+
+    if (seatsLeft <= 0) {
+      this.showToast("Sorry, this event has reached maximum capacity!", "error");
+      return;
+    }
+
+    document.getElementById("regEventId").value = event.id;
+    document.getElementById("regEventCategory").textContent = event.category;
+    document.getElementById("regEventTitle").textContent = event.title;
+    document.getElementById("regEventDateTime").textContent = `${this.formatDate(event.date)} @ ${this.formatTime(event.time)}`;
+    document.getElementById("regEventVenue").textContent = event.venue;
+    document.getElementById("regEventSeatsLeft").textContent = `${seatsLeft} of ${event.capacity} seats remaining`;
+
+    document.getElementById("registrationModal").classList.remove("hidden");
+  }
+
+  // Handle Student Registration Submit
+  handleRegistrationSubmit(e) {
+    e.preventDefault();
+
+    const eventId = document.getElementById("regEventId").value;
+    const studentName = document.getElementById("studentName").value.trim();
+    const studentId = document.getElementById("studentId").value.trim().toUpperCase();
+    const studentEmail = document.getElementById("studentEmail").value.trim().toLowerCase();
+    const studentDept = document.getElementById("studentDept").value;
+    const studentYear = document.getElementById("studentYear").value;
+    const studentPhone = document.getElementById("studentPhone").value.trim();
+
+    const event = this.events.find(ev => ev.id === eventId);
+    if (!event) {
+      this.showToast("Event not found!", "error");
+      return;
+    }
+
+    if (!event.registeredStudents) {
+      event.registeredStudents = [];
+    }
+
+    // Check duplicate student registration
+    const existing = event.registeredStudents.find(s => s.studentId === studentId);
+    if (existing) {
+      this.showToast(`Student ID ${studentId} is already registered for this event!`, "error");
+      return;
+    }
+
+    // Check capacity
+    if (event.registeredStudents.length >= event.capacity) {
+      this.showToast("Sorry, this event is already full!", "error");
+      return;
+    }
+
+    const uniqueTicketId = "TKT-" + Math.floor(100000 + Math.random() * 900000);
+    const now = new Date();
+    const formattedRegTime = now.toISOString().replace("T", " ").substring(0, 16);
+
+    const attendeeRecord = {
+      ticketId: uniqueTicketId,
+      name: studentName,
+      studentId: studentId,
+      email: studentEmail,
+      department: studentDept,
+      year: studentYear,
+      phone: studentPhone || "N/A",
+      registeredAt: formattedRegTime,
+      attended: false
+    };
+
+    // Save to event roster
+    event.registeredStudents.push(attendeeRecord);
+
+    // Save to user's registered tickets
+    const ticketRecord = {
+      ...attendeeRecord,
+      eventId: event.id,
+      eventTitle: event.title,
+      category: event.category,
+      date: event.date,
+      time: event.time,
+      venue: event.venue,
+      organizer: event.organizer
+    };
+    this.myRegistrations.unshift(ticketRecord);
+
+    this.saveState();
+    this.closeModal("registrationModal");
+    e.target.reset();
+
+    this.renderEvents();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+
+    this.showToast("Registration Successful! Your ticket has been generated.", "success");
+    this.showTicketModal(ticketRecord);
+  }
+
+  // View Ticket by Event ID
+  viewMyTicketByEvent(eventId) {
+    const ticket = this.myRegistrations.find(t => t.eventId === eventId);
+    if (ticket) {
+      this.showTicketModal(ticket);
+    } else {
+      this.showToast("No ticket found for this event.", "error");
+    }
+  }
+
+  // Display Digital Ticket & Render QR code on Canvas
+  showTicketModal(ticket) {
+    document.getElementById("tktCategory").textContent = ticket.category || "CAMPUS EVENT";
+    document.getElementById("tktRegId").textContent = ticket.ticketId;
+    document.getElementById("tktEventTitle").textContent = ticket.eventTitle;
+    document.getElementById("tktDate").textContent = `${this.formatDate(ticket.date)} • ${this.formatTime(ticket.time)}`;
+    document.getElementById("tktVenue").textContent = ticket.venue;
+    document.getElementById("tktOrganizer").textContent = ticket.organizer;
+
+    document.getElementById("tktAttendeeName").textContent = ticket.name;
+    document.getElementById("tktAttendeeId").textContent = ticket.studentId;
+    document.getElementById("tktDept").textContent = `${ticket.department} (${ticket.year || "Student"})`;
+    document.getElementById("tktStatus").textContent = ticket.attended ? "CHECKED-IN" : "CONFIRMED";
+
+    // Draw QR Code on Canvas
+    this.renderQrCodeCanvas("ticketQrCanvas", `${ticket.ticketId}:${ticket.studentId}:${ticket.eventId}`);
+
+    document.getElementById("ticketModal").classList.remove("hidden");
+  }
+
+  // Pure JavaScript QR Code Canvas Renderer (Zero Dependencies)
+  renderQrCodeCanvas(canvasId, text) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const size = 130;
+    canvas.width = size;
+    canvas.height = size;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, size, size);
+
+    // Simple pseudo-random deterministic hash based on text for authentic scannable-looking matrix
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      hash = ((hash << 5) - hash) + text.charCodeAt(i);
+      hash |= 0;
+    }
+
+    const gridSize = 21; // standard version 1 QR matrix size
+    const cellSize = Math.floor(size / (gridSize + 2));
+    const offset = Math.floor((size - (cellSize * gridSize)) / 2);
+
+    ctx.fillStyle = "#0f172a";
+
+    // Draw standard QR finder patterns in 3 corners
+    const drawFinderPattern = (startX, startY) => {
+      for (let r = 0; r < 7; r++) {
+        for (let c = 0; c < 7; c++) {
+          const isBlack = (r === 0 || r === 6 || c === 0 || c === 6) ||
+                          (r >= 2 && r <= 4 && c >= 2 && c <= 4);
+          if (isBlack) {
+            ctx.fillRect(offset + (startX + c) * cellSize, offset + (startY + r) * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+    };
+
+    drawFinderPattern(0, 0); // Top-left
+    drawFinderPattern(gridSize - 7, 0); // Top-right
+    drawFinderPattern(0, gridSize - 7); // Bottom-left
+
+    // Draw pseudo-random data bits
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        // Skip corner finder patterns
+        if ((r < 8 && c < 8) || (r < 8 && c >= gridSize - 8) || (r >= gridSize - 8 && c < 8)) {
+          continue;
+        }
+
+        // Timing patterns
+        if (r === 6 || c === 6) {
+          if ((r + c) % 2 === 0) {
+            ctx.fillRect(offset + c * cellSize, offset + r * cellSize, cellSize, cellSize);
+          }
+          continue;
+        }
+
+        // Deterministic bit fill based on text bytes
+        const bitVal = Math.sin(hash * (r * 17 + c * 31) + text.charCodeAt((r + c) % text.length));
+        if (bitVal > 0.05) {
+          ctx.fillRect(offset + c * cellSize, offset + r * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+  }
+
+  // Render My Registered Tickets View
+  renderMyTickets() {
+    const container = document.getElementById("myTicketsContainer");
+    const emptyState = document.getElementById("noTicketsState");
+
+    if (this.myRegistrations.length === 0) {
+      container.innerHTML = "";
+      emptyState.classList.remove("hidden");
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+
+    container.innerHTML = this.myRegistrations.map(tkt => {
+      return `
+        <div class="ticket-item-card">
+          <div class="ticket-item-header">
+            <div>
+              <span class="category-badge">${tkt.category}</span>
+              <span style="font-family: monospace; font-size: 0.8rem; margin-left: 0.5rem; color: #cbd5e1;">${tkt.ticketId}</span>
+            </div>
+            <span class="badge-subtle" style="background: rgba(255,255,255,0.2); color: #fff;">Confirmed</span>
+          </div>
+
+          <div class="ticket-item-body">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.75rem;">${tkt.eventTitle}</h3>
+            
+            <div class="event-meta-info" style="border: none; padding-top: 0;">
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span>${this.formatDate(tkt.date)} at ${this.formatTime(tkt.time)}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span>${tkt.venue}</span>
+              </div>
+              <div class="meta-row">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Attendee: <strong>${tkt.name}</strong> (${tkt.studentId})</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ticket-item-footer">
+            <button class="btn btn-danger-outline btn-sm" onclick="app.cancelRegistration('${tkt.ticketId}', '${tkt.eventId}')">
+              Cancel RSVP
+            </button>
+            <button class="btn btn-primary btn-sm" onclick='app.showTicketModal(${JSON.stringify(tkt).replace(/'/g, "&#39;")})'>
+              View Pass & QR
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Cancel RSVP / Free seat
+  cancelRegistration(ticketId, eventId) {
+    if (!confirm("Are you sure you want to cancel your ticket registration? This will free your seat for other students.")) {
+      return;
+    }
+
+    // Remove from myRegistrations
+    this.myRegistrations = this.myRegistrations.filter(t => t.ticketId !== ticketId);
+
+    // Remove from event's registeredStudents
+    const event = this.events.find(e => e.id === eventId);
+    if (event && event.registeredStudents) {
+      event.registeredStudents = event.registeredStudents.filter(s => s.ticketId !== ticketId);
+    }
+
+    this.saveState();
+    this.renderMyTickets();
+    this.renderEvents();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+    this.showToast("Registration cancelled successfully. Seat restored.", "info");
+  }
+
+  updateMyTicketsBadge() {
+    const badge = document.getElementById("myTicketsBadge");
+    if (badge) {
+      badge.textContent = this.myRegistrations.length;
+    }
+  }
+
+  // ORGANIZER / ADMIN DASHBOARD LOGIC
+  updateAdminDashboard() {
+    const totalEvents = this.events.length;
+    let totalRegs = 0;
+    let totalCap = 0;
+
+    this.events.forEach(e => {
+      totalCap += e.capacity || 0;
+      totalRegs += (e.registeredStudents || []).length;
+    });
+
+    const avgOccupancy = totalCap > 0 ? Math.round((totalRegs / totalCap) * 100) : 0;
+
+    document.getElementById("metricTotalEvents").textContent = totalEvents;
+    document.getElementById("metricTotalRegs").textContent = totalRegs;
+    document.getElementById("metricTotalCapacity").textContent = totalCap;
+    document.getElementById("metricAvgOccupancy").textContent = `${avgOccupancy}%`;
+
+    const adminTableCount = document.getElementById("adminTableCount");
+    if (adminTableCount) adminTableCount.textContent = `${totalEvents} Events Active`;
+
+    this.renderAdminTable();
+  }
+
+  renderAdminTable() {
+    const tbody = document.getElementById("adminEventsTableBody");
+    if (!tbody) return;
+
+    if (this.events.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem;">No events available. Click "+ Publish New Event" to add one.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = this.events.map(ev => {
+      const regCount = (ev.registeredStudents || []).length;
+      const isFull = regCount >= ev.capacity;
+      const percent = Math.min(100, Math.round((regCount / ev.capacity) * 100));
+
+      return `
+        <tr>
+          <td>
+            <strong>${ev.title}</strong>
+            <div style="font-size: 0.775rem; color: var(--text-muted);">🏛️ ${ev.organizer}</div>
+          </td>
+          <td><span class="category-badge" style="background:#e0e7ff; color:#3730a3;">${ev.category}</span></td>
+          <td>
+            <div>${this.formatDate(ev.date)}</div>
+            <small style="color: var(--text-muted);">${ev.venue}</small>
+          </td>
+          <td style="min-width: 140px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
+              <span>${regCount} / ${ev.capacity}</span>
+              <span>${percent}%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill ${percent >= 90 ? 'full' : ''}" style="width: ${percent}%;"></div>
+            </div>
+          </td>
+          <td>
+            <span class="badge-subtle" style="${isFull ? 'background:#fee2e2; color:#b91c1c;' : 'background:#ecfdf5; color:#047857;'}">
+              ${isFull ? 'Sold Out' : 'Active'}
+            </span>
+          </td>
+          <td>
+            <div class="table-actions">
+              <button class="btn btn-outline-sm" onclick="app.openRosterModal('${ev.id}')" title="View Registered Attendees">
+                👥 Roster (${regCount})
+              </button>
+              <button class="btn btn-outline-sm" onclick="app.openEditEventModal('${ev.id}')" title="Edit Event Details">
+                ✏️ Edit
+              </button>
+              <button class="btn btn-outline-sm btn-danger-outline" onclick="app.deleteEvent('${ev.id}')" title="Delete Event">
+                🗑️
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // Create / Edit Event Flow
+  openCreateModal() {
+    document.getElementById("createEventModalTitle").textContent = "Create New Campus Event";
+    document.getElementById("editEventId").value = "";
+    document.getElementById("createEventForm").reset();
+    document.getElementById("btnSaveEvent").textContent = "Publish Event";
+    document.getElementById("createEventModal").classList.remove("hidden");
+  }
+
+  openEditEventModal(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    document.getElementById("createEventModalTitle").textContent = "Edit Campus Event";
+    document.getElementById("editEventId").value = event.id;
+    document.getElementById("eventTitle").value = event.title;
+    document.getElementById("eventCategory").value = event.category;
+    document.getElementById("eventOrganizer").value = event.organizer;
+    document.getElementById("eventDate").value = event.date;
+    document.getElementById("eventTime").value = event.time;
+    document.getElementById("eventVenue").value = event.venue;
+    document.getElementById("eventCapacity").value = event.capacity;
+    document.getElementById("eventTags").value = (event.tags || []).join(", ");
+    document.getElementById("eventDesc").value = event.description;
+
+    document.getElementById("btnSaveEvent").textContent = "Save Changes";
+    document.getElementById("createEventModal").classList.remove("hidden");
+  }
+
+  handleCreateEventSubmit(e) {
+    e.preventDefault();
+
+    const editId = document.getElementById("editEventId").value;
+    const title = document.getElementById("eventTitle").value.trim();
+    const category = document.getElementById("eventCategory").value;
+    const organizer = document.getElementById("eventOrganizer").value.trim();
+    const date = document.getElementById("eventDate").value;
+    const time = document.getElementById("eventTime").value;
+    const venue = document.getElementById("eventVenue").value.trim();
+    const capacity = parseInt(document.getElementById("eventCapacity").value, 10);
+    const rawTags = document.getElementById("eventTags").value;
+    const tags = rawTags ? rawTags.split(",").map(t => t.trim()).filter(Boolean) : [];
+    const description = document.getElementById("eventDesc").value.trim();
+
+    if (editId) {
+      // Edit existing event
+      const existing = this.events.find(ev => ev.id === editId);
+      if (existing) {
+        existing.title = title;
+        existing.category = category;
+        existing.organizer = organizer;
+        existing.date = date;
+        existing.time = time;
+        existing.venue = venue;
+        existing.capacity = capacity;
+        existing.tags = tags;
+        existing.description = description;
+
+        // Also update any booked tickets in myRegistrations
+        this.myRegistrations.forEach(t => {
+          if (t.eventId === editId) {
+            t.eventTitle = title;
+            t.category = category;
+            t.date = date;
+            t.time = time;
+            t.venue = venue;
+            t.organizer = organizer;
+          }
+        });
+
+        this.showToast("Event updated successfully!", "success");
+      }
+    } else {
+      // Create new event
+      const newEvent = {
+        id: "EVT-" + Math.floor(100 + Math.random() * 900),
+        title,
+        category,
+        organizer,
+        date,
+        time,
+        venue,
+        capacity,
+        tags,
+        description,
+        registeredStudents: []
+      };
+      this.events.unshift(newEvent);
+      this.showToast("New event published successfully!", "success");
+    }
+
+    this.saveState();
+    this.closeModal("createEventModal");
+    this.renderEvents();
+    this.updateAdminDashboard();
+  }
+
+  deleteEvent(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    if (!confirm(`Are you sure you want to delete "${event.title}"? All existing attendee registrations will be removed.`)) {
+      return;
+    }
+
+    this.events = this.events.filter(e => e.id !== eventId);
+    this.myRegistrations = this.myRegistrations.filter(t => t.eventId !== eventId);
+
+    this.saveState();
+    this.renderEvents();
+    this.renderMyTickets();
+    this.updateMyTicketsBadge();
+    this.updateAdminDashboard();
+    this.showToast("Event deleted successfully.", "info");
+  }
+
+  // ATTENDEE ROSTER MANAGEMENT & CHECK-IN
+  openRosterModal(eventId) {
+    const event = this.events.find(e => e.id === eventId);
+    if (!event) return;
+
+    this.activeRosterEvent = event;
+    document.getElementById("rosterEventTitle").textContent = event.title;
+    document.getElementById("rosterSearchInput").value = "";
+
+    this.renderRosterTable(event.registeredStudents || []);
+    document.getElementById("rosterModal").classList.remove("hidden");
+  }
+
+  filterRoster() {
+    if (!this.activeRosterEvent) return;
+    const q = document.getElementById("rosterSearchInput").value.trim().toLowerCase();
+    const students = this.activeRosterEvent.registeredStudents || [];
+
+    const filtered = students.filter(s => 
+      s.name.toLowerCase().includes(q) ||
+      s.studentId.toLowerCase().includes(q) ||
+      s.email.toLowerCase().includes(q) ||
+      s.ticketId.toLowerCase().includes(q)
+    );
+
+    this.renderRosterTable(filtered);
+  }
+
+  renderRosterTable(students) {
+    const tbody = document.getElementById("rosterTableBody");
+    const countEl = document.getElementById("rosterCount");
+    const checkedInCountEl = document.getElementById("rosterCheckedInCount");
+
+    const total = (this.activeRosterEvent.registeredStudents || []).length;
+    const checkedIn = (this.activeRosterEvent.registeredStudents || []).filter(s => s.attended).length;
+
+    countEl.textContent = total;
+    checkedInCountEl.textContent = checkedIn;
+
+    if (students.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color:var(--text-muted);">No attendees found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = students.map(s => {
+      return `
+        <tr>
+          <td><code style="font-weight:700; color:var(--primary);">${s.ticketId}</code></td>
+          <td><strong>${s.name}</strong></td>
+          <td>${s.studentId}</td>
+          <td>${s.department} (${s.year || "N/A"})</td>
+          <td><small>${s.email}</small></td>
+          <td>
+            <button class="btn btn-sm ${s.attended ? 'btn-secondary' : 'btn-primary'}" onclick="app.toggleCheckIn('${s.ticketId}')">
+              ${s.attended ? '✓ Checked In' : 'Mark Present'}
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  toggleCheckIn(ticketId) {
+    if (!this.activeRosterEvent) return;
+
+    const student = (this.activeRosterEvent.registeredStudents || []).find(s => s.ticketId === ticketId);
+    if (student) {
+      student.attended = !student.attended;
+
+      // Update in myRegistrations if it exists there
+      const myTicket = this.myRegistrations.find(t => t.ticketId === ticketId);
+      if (myTicket) {
+        myTicket.attended = student.attended;
+      }
+
+      this.saveState();
+      this.filterRoster();
+      this.showToast(`${student.name} marked as ${student.attended ? 'Present' : 'Absent'}.`, "info");
+    }
+  }
+
+  // Export Roster as CSV File Download
+  exportRosterCSV() {
+    if (!this.activeRosterEvent || !(this.activeRosterEvent.registeredStudents || []).length) {
+      this.showToast("No attendees to export!", "error");
+      return;
+    }
+
+    const students = this.activeRosterEvent.registeredStudents;
+    let csv = "Ticket ID,Student Name,Roll No,Email,Department,Year,Phone,Registered At,Attendance Status\n";
+
+    students.forEach(s => {
+      const row = [
+        `"${s.ticketId}"`,
+        `"${s.name}"`,
+        `"${s.studentId}"`,
+        `"${s.email}"`,
+        `"${s.department}"`,
+        `"${s.year || ''}"`,
+        `"${s.phone || ''}"`,
+        `"${s.registeredAt}"`,
+        `"${s.attended ? 'Present' : 'Absent'}"`
+      ];
+      csv += row.join(",") + "\n";
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${this.activeRosterEvent.id}_Attendee_Roster.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    this.showToast("Attendee CSV roster downloaded!", "success");
+  }
+
+  // Modal Close Helper
+  closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add("hidden");
+  }
+
+  // Toast Notification System
+  showToast(message, type = "info") {
+    const container = document.getElementById("toastContainer");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+
+    let icon = "ℹ️";
+    if (type === "success") icon = "✅";
+    if (type === "error") icon = "⚠️";
+
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(10px)";
+      toast.style.transition = "all 0.3s ease";
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+}
+
+// Global Application Instance
+let app;
+function initApp() {
+  app = new CampusEventManager();
+  window.app = app;
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
+
+// Close modals when clicking backdrop
+window.addEventListener("click", (e) => {
+  if (e.target.classList.contains("modal-overlay")) {
+    e.target.classList.add("hidden");
+  }
+});
+
+// Close modals on Escape key
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    document.querySelectorAll(".modal-overlay").forEach(m => m.classList.add("hidden"));
+  }
+});
